@@ -16,9 +16,10 @@ export const workouts = pgTable("workouts", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   type: text("type").notNull(), // 'hero', 'villain', 'custom'
-  difficulty: text("difficulty").notNull(), // 'Beginner', 'Intermediate', 'Advanced', 'God Level'
+  difficulty: text("difficulty").notNull(), // 'Beginner', 'Intermediate', 'Advanced', 'Elite Level'
   program: jsonb("program").notNull(), // The full workout plan
   imageUrl: text("image_url"),
+  avatarEmoji: text("avatar_emoji"), // Added for character avatar
   isPro: boolean("is_pro").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
