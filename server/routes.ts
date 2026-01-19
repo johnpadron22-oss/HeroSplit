@@ -119,7 +119,7 @@ async function seedDatabase() {
       name: "The One Punch",
       description: "100 Pushups, 100 Situps, 100 Squats, and a 10km Run.",
       type: "hero",
-      difficulty: "God Level",
+      difficulty: "Elite Level",
       program: [
         { name: "Pushups", reps: "100" },
         { name: "Situps", reps: "100" },
@@ -127,6 +127,7 @@ async function seedDatabase() {
         { name: "Run", distance: "10km" }
       ],
       isPro: false,
+      avatarEmoji: "✨",
       imageUrl: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?auto=format&fit=crop&q=80&w=1000"
     },
     {
@@ -141,6 +142,7 @@ async function seedDatabase() {
         { name: "Shadow Boxing", duration: "10 min" }
       ],
       isPro: false,
+      avatarEmoji: "🦇",
       imageUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1000"
     },
      {
@@ -155,6 +157,7 @@ async function seedDatabase() {
         { name: "Burpees", reps: "3x15" }
       ],
       isPro: false,
+      avatarEmoji: "🌟",
       imageUrl: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&q=80&w=1000"
     }
   ];
@@ -165,13 +168,14 @@ async function seedDatabase() {
       name: "The Mad Titan",
       description: "Heavy lifting to balance the universe.",
       type: "villain",
-      difficulty: "God Level",
+      difficulty: "Elite Level",
       program: [
         { name: "Deadlift", reps: "5x5 (Heavy)" },
         { name: "Military Press", reps: "5x5" },
         { name: "Farmer's Walk", distance: "50m x 4" }
       ],
       isPro: true, // PRO ONLY
+      avatarEmoji: "🛡️",
       imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=1000"
     },
     {
@@ -186,6 +190,7 @@ async function seedDatabase() {
         { name: "Spider Crawls", distance: "20m x 3" }
       ],
       isPro: true,
+      avatarEmoji: "🥊",
       imageUrl: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&q=80&w=1000"
     }
   ];

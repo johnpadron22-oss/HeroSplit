@@ -126,6 +126,11 @@ export default function WorkoutView() {
       <main className="flex-1 pt-16 pb-24 max-w-2xl mx-auto w-full px-4 flex flex-col justify-center min-h-screen">
         {!isStarted ? (
           <div className="text-center space-y-6">
+            {workout.avatarEmoji && (
+              <div className="text-6xl mb-6 animate-bounce-slow">
+                {workout.avatarEmoji}
+              </div>
+            )}
             <div className="inline-block px-3 py-1 rounded-full border border-white/10 text-xs font-mono uppercase tracking-widest bg-white/5 mb-4">
               {workout.difficulty}
             </div>

@@ -36,6 +36,13 @@ export function WorkoutCard({ workout, isLocked = false, onUnlock }: WorkoutCard
       )} />
 
       <div className="relative p-6 flex flex-col h-full">
+        {/* Avatar Emoji */}
+        {workout.avatarEmoji && (
+          <div className="absolute top-4 right-4 text-4xl select-none opacity-80 group-hover:opacity-100 transition-opacity">
+            {workout.avatarEmoji}
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
           <div className={cn(
@@ -46,7 +53,7 @@ export function WorkoutCard({ workout, isLocked = false, onUnlock }: WorkoutCard
           )}>
             {workout.difficulty}
           </div>
-          {isLocked && <Lock className="w-5 h-5 text-muted-foreground" />}
+          {isLocked && <Lock className="w-5 h-5 text-muted-foreground mr-1" />}
         </div>
 
         {/* Content */}
