@@ -66,7 +66,7 @@ export function WorkoutCard({ workout, isLocked = false, onUnlock }: WorkoutCard
         <div className="flex items-center gap-4 text-xs text-muted-foreground mb-6">
           <div className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
-            <span>{(workout.program as any).duration || '30'}m</span>
+            <span>{(workout.program as any).duration || '30-45'} min</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5" />
