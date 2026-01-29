@@ -20,6 +20,7 @@ export const workouts = pgTable("workouts", {
   program: jsonb("program").notNull(), // The full workout plan
   imageUrl: text("image_url"),
   avatarEmoji: text("avatar_emoji"), // Added for character avatar
+  equipment: text("equipment"), // e.g. 'Full Gym', 'Bodyweight'
   isPro: boolean("is_pro").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
