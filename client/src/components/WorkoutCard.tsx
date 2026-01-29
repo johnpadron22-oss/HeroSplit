@@ -53,6 +53,12 @@ export function WorkoutCard({ workout, isLocked = false, onUnlock }: WorkoutCard
           )}>
             {workout.difficulty}
           </div>
+          {workout.equipment && (
+            <div className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter bg-white/5 text-muted-foreground border border-white/10 ml-2">
+              {workout.equipment}
+            </div>
+          )}
+          <div className="flex-1" />
           {isLocked && <Lock className="w-5 h-5 text-muted-foreground mr-1" />}
         </div>
 

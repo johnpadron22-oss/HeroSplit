@@ -128,6 +128,7 @@ async function seedDatabase() {
       ],
       isPro: false,
       avatarEmoji: "✨",
+      equipment: "Bodyweight",
       imageUrl: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?auto=format&fit=crop&q=80&w=1000"
     },
     {
@@ -143,6 +144,7 @@ async function seedDatabase() {
       ],
       isPro: false,
       avatarEmoji: "🦇",
+      equipment: "Bodyweight",
       imageUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1000"
     },
      {
@@ -158,6 +160,7 @@ async function seedDatabase() {
       ],
       isPro: false,
       avatarEmoji: "🌟",
+      equipment: "Bodyweight",
       imageUrl: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&q=80&w=1000"
     }
   ];
@@ -176,6 +179,7 @@ async function seedDatabase() {
       ],
       isPro: true, // PRO ONLY
       avatarEmoji: "🛡️",
+      equipment: "Full Gym",
       imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=1000"
     },
     {
@@ -191,6 +195,7 @@ async function seedDatabase() {
       ],
       isPro: true,
       avatarEmoji: "🥊",
+      equipment: "Full Gym",
       imageUrl: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&q=80&w=1000"
     }
   ];
