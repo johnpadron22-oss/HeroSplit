@@ -1,0 +1,264 @@
+// NEW CHARACTERS - Add these after your existing characters, before the ];
+
+  {
+    id: "wall-crawler",
+    slug: "wall-crawler-acrobat",
+    name: "Wall-Crawler Acrobat (Inspired)",
+    universe: "Marvel",
+    category: "Superhero",
+    avatar: "🕷️",
+    archetype: "Agile",
+    tagline: "Bodyweight mastery + explosive agility",
+    stats: { strength: 7, speed: 9, endurance: 8 },
+    isPremium: true,
+    days: [
+      mkDay("back", "Hypertrophy", [
+        mkBlock("Warm-up", [mkMove("Scap Pull-Aparts", "2", "15"), mkMove("Quadrupedal Crawl", "2", "30s")]),
+        mkBlock("Primary", [mkMove("Weighted Chin-Up", "4", "6–8", "120s"), mkMove("Climb-Up Practice", "4", "3–5", "120s")]),
+        mkBlock("Accessory", [mkMove("Front Lever Progression", "3", "5–8s hold", "90s"), mkMove("Hanging Leg Raise", "3", "10–12", "60s")]),
+      ], ["Grip + vertical pull strength for climbing."]),
+      mkDay("legs", "Conditioning", [
+        mkBlock("Primary", [mkMove("Pistol Squat", "4", "5–8/leg", "90s"), mkMove("Broad Jump", "5", "5", "90s")]),
+        mkBlock("Accessory", [mkMove("Bulgarian Split Squat Jump", "3", "6/leg", "75s"), mkMove("Wall Sit", "3", "45–60s", "60s")]),
+      ], ["Single-leg power for parkour landings."]),
+      mkDay("upper", "Hypertrophy", [
+        mkBlock("Primary", [mkMove("Handstand Push-Up", "4", "5–8", "120s"), mkMove("Ring Dip", "4", "8–10", "90s")]),
+        mkBlock("Accessory", [mkMove("Pike Push-Up", "3", "10–12", "75s"), mkMove("Hollow Body Rock", "3", "30–45s", "60s")]),
+      ], ["Gymnastic pushing + core tension."]),
+    ],
+  },
+
+  {
+    id: "speedforce-sprinter",
+    slug: "speedforce-sprinter",
+    name: "Speedforce Sprinter (Inspired)",
+    universe: "DC",
+    category: "Superhero",
+    avatar: "⚡",
+    archetype: "Speed",
+    tagline: "Explosive acceleration + top-end speed",
+    stats: { strength: 6, speed: 10, endurance: 8 },
+    isPremium: true,
+    days: [
+      mkDay("conditioning", "Conditioning", [
+        mkBlock("Speed Work", [mkMove("Flying 30m Sprint", "6", "1", "180s"), mkMove("Block Starts", "5", "20m", "120s")]),
+        mkBlock("Plyometrics", [mkMove("Box Jump", "4", "5", "90s"), mkMove("Bounding", "4", "30m", "90s")]),
+      ], ["Max velocity + acceleration development."]),
+      mkDay("legs", "Strength", [
+        mkBlock("Primary", [mkMove("Trap Bar Deadlift", "5", "3–5", "150s"), mkMove("Bulgarian Split Squat", "4", "6–8/leg", "120s")]),
+        mkBlock("Accessory", [mkMove("Calf Raise", "4", "12–15", "60s"), mkMove("Nordic Curl", "3", "5–8", "90s")]),
+      ], ["Posterior chain + single-leg power."]),
+      mkDay("engine", "Conditioning", [
+        mkBlock("Intervals", [mkMove("150m Sprint", "5", "1", "4min rest"), mkMove("Tempo Run 200m", "4", "85% effort", "120s")]),
+        mkBlock("Finisher", [mkMove("A-Skip Drill", "3", "40m"), mkMove("High Knee Sprint", "3", "30m")]),
+      ], ["Speed endurance + technique work."]),
+    ],
+  },
+
+  {
+    id: "gamma-juggernaut",
+    slug: "gamma-juggernaut",
+    name: "Gamma Juggernaut (Inspired)",
+    universe: "Marvel",
+    category: "Superhero",
+    avatar: "💪",
+    archetype: "Power",
+    tagline: "Maximum strength + raw power",
+    stats: { strength: 10, speed: 5, endurance: 7 },
+    isPremium: true,
+    days: [
+      mkDay("legs", "Strength", [
+        mkBlock("Primary", [mkMove("Back Squat", "5", "3–5", "180s"), mkMove("Conventional Deadlift", "5", "3–5", "180s")]),
+        mkBlock("Accessory", [mkMove("Front Squat", "3", "6–8", "120s"), mkMove("Good Morning", "3", "8–10", "90s")]),
+      ], ["Absolute leg strength + posterior chain."]),
+      mkDay("push", "Strength", [
+        mkBlock("Primary", [mkMove("Bench Press", "5", "3–5", "150s"), mkMove("Log Press", "4", "5–6", "150s")]),
+        mkBlock("Accessory", [mkMove("Close-Grip Bench", "3", "6–8", "120s"), mkMove("Weighted Dip", "3", "8–10", "90s")]),
+      ], ["Max pressing power."]),
+      mkDay("pull", "Strength", [
+        mkBlock("Primary", [mkMove("Barbell Row", "5", "5–6", "120s"), mkMove("Farmer Carry", "4", "40–60m", "90s")]),
+        mkBlock("Accessory", [mkMove("Pull-Up", "4", "AMRAP", "120s"), mkMove("Shrug", "4", "10–12", "90s")]),
+      ], ["Grip + back thickness."]),
+    ],
+  },
+
+  {
+    id: "thunder-god",
+    slug: "thunder-god",
+    name: "Thunder God (Inspired)",
+    universe: "Marvel",
+    category: "Superhero",
+    avatar: "🔨",
+    archetype: "Power",
+    tagline: "Overhead power + battle conditioning",
+    stats: { strength: 9, speed: 7, endurance: 8 },
+    isPremium: true,
+    days: [
+      mkDay("push", "Strength", [
+        mkBlock("Primary", [mkMove("Overhead Press", "5", "3–5", "150s"), mkMove("Push Press", "4", "5–6", "120s")]),
+        mkBlock("Accessory", [mkMove("Dumbbell Overhead Press", "3", "8–10", "90s"), mkMove("Landmine Press", "3", "10–12", "75s")]),
+      ], ["Maximal overhead strength."]),
+      mkDay("pull", "Hypertrophy", [
+        mkBlock("Primary", [mkMove("Deadlift", "4", "5–6", "150s"), mkMove("Weighted Pull-Up", "4", "6–8", "120s")]),
+        mkBlock("Accessory", [mkMove("Cable Row", "3", "10–12", "75s"), mkMove("Face Pull", "3", "15", "60s")]),
+      ], ["Pulling volume + back thickness."]),
+      mkDay("conditioning", "Conditioning", [
+        mkBlock("Medley", [mkMove("Tire Flip", "5", "5"), mkMove("Sledgehammer Slam", "5", "20"), mkMove("Atlas Stone Load", "5", "3")]),
+      ], ["Battle-ready work capacity."]),
+    ],
+  },
+
+  {
+    id: "armored-genius",
+    slug: "armored-genius",
+    name: "Armored Genius (Inspired)",
+    universe: "Marvel",
+    category: "Superhero",
+    avatar: "🤖",
+    archetype: "Balanced",
+    tagline: "Executive physique + functional fitness",
+    stats: { strength: 7, speed: 7, endurance: 8 },
+    isPremium: true,
+    days: [
+      mkDay("chest", "Hypertrophy", [
+        mkBlock("Primary", [mkMove("Barbell Bench Press", "4", "6–8", "120s"), mkMove("Incline DB Press", "3", "8–10", "90s")]),
+        mkBlock("Accessory", [mkMove("Cable Fly", "3", "12–15", "60s"), mkMove("Push-Up", "2", "AMRAP", "60s")]),
+      ], ["Classic bodybuilding chest work."]),
+      mkDay("back", "Hypertrophy", [
+        mkBlock("Primary", [mkMove("Barbell Row", "4", "6–8", "120s"), mkMove("Pull-Up", "4", "8–10", "90s")]),
+        mkBlock("Accessory", [mkMove("Lat Pulldown", "3", "10–12", "75s"), mkMove("Rear Delt Fly", "3", "15", "60s")]),
+      ], ["Back thickness + width."]),
+      mkDay("conditioning", "Conditioning", [
+        mkBlock("Cardio", [mkMove("Rowing Machine", "1", "20min steady"), mkMove("Bike Sprints", "8", "30s / 90s rest")]),
+      ], ["Maintain conditioning for busy schedule."]),
+    ],
+  },
+
+  {
+    id: "tactical-assassin",
+    slug: "tactical-assassin",
+    name: "Tactical Assassin (Inspired)",
+    universe: "DC",
+    category: "Superhero",
+    avatar: "⚔️",
+    archetype: "Balanced",
+    tagline: "Combat conditioning + tactical strength",
+    stats: { strength: 8, speed: 8, endurance: 9 },
+    isPremium: true,
+    days: [
+      mkDay("upper", "Strength", [
+        mkBlock("Primary", [mkMove("Weighted Pull-Up", "5", "3–5", "150s"), mkMove("Barbell Overhead Press", "4", "5–6", "120s")]),
+        mkBlock("Accessory", [mkMove("Dumbbell Row", "3", "8–10", "90s"), mkMove("Dip", "3", "10–12", "90s")]),
+      ], ["Upper body strength for combat."]),
+      mkDay("legs", "Strength", [
+        mkBlock("Primary", [mkMove("Front Squat", "5", "3–5", "150s"), mkMove("Romanian Deadlift", "4", "6–8", "120s")]),
+        mkBlock("Accessory", [mkMove("Reverse Lunge", "3", "8/leg", "90s"), mkMove("Sled Push", "4", "30m", "90s")]),
+      ], ["Functional leg power."]),
+      mkDay("conditioning", "Conditioning", [
+        mkBlock("Circuit x5", [mkMove("Burpee", "5", "10"), mkMove("Kettlebell Swing", "5", "15"), mkMove("Box Jump", "5", "8")]),
+      ], ["Work capacity under fatigue."]),
+    ],
+  },
+
+  {
+    id: "mercenary-regen",
+    slug: "mercenary-regen",
+    name: "Mercenary Regen (Inspired)",
+    universe: "Marvel",
+    category: "Superhero",
+    avatar: "🗡️",
+    archetype: "Endurance",
+    tagline: "High-volume chaos + metabolic mayhem",
+    stats: { strength: 7, speed: 8, endurance: 10 },
+    isPremium: true,
+    days: [
+      mkDay("mixed", "Conditioning", [
+        mkBlock("Chaos Circuit A", [mkMove("Assault Bike", "1", "30 cal"), mkMove("Burpee Box Jump", "1", "20"), mkMove("KB Swing", "1", "30")]),
+        mkBlock("Chaos Circuit B", [mkMove("Row Machine", "1", "500m"), mkMove("Devil Press", "1", "15"), mkMove("Wall Ball", "1", "30")]),
+      ], ["Unpredictable high-intensity work."]),
+      mkDay("upper", "Hypertrophy", [
+        mkBlock("Superset x4", [mkMove("DB Bench Press", "4", "12–15", "30s"), mkMove("DB Row", "4", "12–15", "90s")]),
+        mkBlock("Finisher", [mkMove("Push-Up", "3", "AMRAP"), mkMove("Pull-Up", "3", "AMRAP")]),
+      ], ["Volume pushing + pulling."]),
+      mkDay("engine", "Conditioning", [
+        mkBlock("EMOM 20min", [mkMove("Thruster", "20", "10"), mkMove("Burpee", "20", "8"), mkMove("Double Under", "20", "30")]),
+      ], ["Sustained anaerobic output."]),
+    ],
+  },
+
+  {
+    id: "chaos-agent",
+    slug: "chaos-agent",
+    name: "Chaos Agent (Inspired)",
+    universe: "DC",
+    category: "Superhero",
+    avatar: "🃏",
+    archetype: "Endurance",
+    tagline: "Mental toughness + endurance under stress",
+    stats: { strength: 6, speed: 7, endurance: 10 },
+    isPremium: true,
+    days: [
+      mkDay("conditioning", "Conditioning", [
+        mkBlock("Unpredictable Intervals", [mkMove("Run 400m", "5", "1", "90–180s random"), mkMove("Burpee", "5", "15–25 random"), mkMove("Jump Rope", "5", "100–200 random")]),
+      ], ["Embrace chaos; adapt on the fly."]),
+      mkDay("mixed", "Conditioning", [
+        mkBlock("Circuit x4", [mkMove("Kettlebell Swing", "4", "30"), mkMove("Box Step-Up", "4", "20/leg"), mkMove("Battle Rope", "4", "45s")]),
+      ], ["Sustained effort under discomfort."]),
+      mkDay("core", "Conditioning", [
+        mkBlock("Core Gauntlet", [mkMove("Ab Wheel Rollout", "4", "10–12"), mkMove("Plank Hold", "4", "60–90s"), mkMove("Russian Twist", "4", "30")]),
+      ], ["Mental fortitude through core fatigue."]),
+    ],
+  },
+
+  {
+    id: "apex-predator",
+    slug: "apex-predator",
+    name: "Apex Predator (Inspired)",
+    universe: "Marvel",
+    category: "Superhero",
+    avatar: "👾",
+    archetype: "Power",
+    tagline: "Explosive animalistic power + plyometrics",
+    stats: { strength: 9, speed: 8, endurance: 7 },
+    isPremium: true,
+    days: [
+      mkDay("legs", "Strength", [
+        mkBlock("Primary", [mkMove("Box Squat", "5", "3–5", "150s"), mkMove("Trap Bar Deadlift", "5", "3–5", "150s")]),
+        mkBlock("Plyometric", [mkMove("Depth Jump", "4", "5", "120s"), mkMove("Broad Jump", "4", "5", "90s")]),
+      ], ["Explosive lower body power."]),
+      mkDay("upper", "Hypertrophy", [
+        mkBlock("Primary", [mkMove("Weighted Dip", "4", "6–8", "120s"), mkMove("Barbell Row", "4", "6–8", "120s")]),
+        mkBlock("Accessory", [mkMove("Close-Grip Bench", "3", "8–10", "90s"), mkMove("Pull-Up", "3", "AMRAP", "90s")]),
+      ], ["Upper body mass + power."]),
+      mkDay("mixed", "Conditioning", [
+        mkBlock("Animal Flow Circuit", [mkMove("Bear Crawl", "4", "30m"), mkMove("Crab Walk", "4", "30m"), mkMove("Frog Jump", "4", "20m")]),
+      ], ["Movement quality + conditioning."]),
+    ],
+  },
+
+  {
+    id: "shadow-league-master",
+    slug: "shadow-league-master",
+    name: "Shadow League Master (Inspired)",
+    universe: "DC",
+    category: "Superhero",
+    avatar: "🥋",
+    archetype: "Balanced",
+    tagline: "Martial conditioning + longevity training",
+    stats: { strength: 8, speed: 8, endurance: 9 },
+    isPremium: true,
+    days: [
+      mkDay("upper", "Hypertrophy", [
+        mkBlock("Primary", [mkMove("Push-Up Variation Circuit", "4", "15 each: wide/diamond/decline"), mkMove("Pull-Up Variation Circuit", "4", "10 each: wide/neutral/chin")]),
+        mkBlock("Accessory", [mkMove("Pike Push-Up", "3", "12–15"), mkMove("Inverted Row", "3", "12–15")]),
+      ], ["Bodyweight pushing + pulling mastery."]),
+      mkDay("legs", "Strength", [
+        mkBlock("Primary", [mkMove("Pistol Squat", "4", "6–8/leg", "90s"), mkMove("Single-Leg RDL", "4", "8–10/leg", "90s")]),
+        mkBlock("Accessory", [mkMove("Cossack Squat", "3", "10/leg"), mkMove("Calf Raise", "3", "15")]),
+      ], ["Single-leg strength + mobility."]),
+      mkDay("conditioning", "Conditioning", [
+        mkBlock("Martial Intervals", [mkMove("Heavy Bag Rounds", "6", "3min / 1min rest"), mkMove("Shadow Boxing", "3", "2min")]),
+        mkBlock("Finisher", [mkMove("Jump Rope", "1", "10min steady")]),
+      ], ["Combat endurance + footwork."]),
+    ],
+  },
