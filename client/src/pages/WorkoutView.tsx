@@ -4,7 +4,7 @@ import { useWorkout, useCreateLog } from "@/hooks/use-workouts";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ArrowLeft, Clock, Play, CheckCircle, Timer as TimerIcon, Trophy } from "lucide-react";
+import { Loader2, ArrowLeft, Clock, Play, CheckCircle, Timer as TimerIcon, Trophy, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
