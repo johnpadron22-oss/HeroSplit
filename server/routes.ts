@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { InsertWorkout } from "@shared/schema";
+import { InsertWorkout, workouts } from "@shared/schema";
+import { db } from "./db";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -110,98 +111,119 @@ export async function registerRoutes(
 }
 
 async function seedDatabase() {
-  const existing = await storage.getWorkouts();
-  if (existing.length > 0) return;
+  // Clear and re-seed to ensure new characters appear
+  await db.delete(workouts);
 
-  const heroes: InsertWorkout[] = [
+  // Helper to match the provided character structure to our schema
+  const mkMove = (name: string, sets?: string, reps?: string, rest?: string) => ({ name, sets, reps, rest });
+  const mkBlock = (name: string, moves: any[]) => moves;
+  const mkDay = (id: string, type: string, blocks: any[][]) => blocks.flat();
+
+  const newCharactersRaw = [
+    {
+      slug: "wall-crawler-acrobat",
+      name: "Wall-Crawler Acrobat (Inspired)",
+      type: "hero",
+      difficulty: "Advanced",
+      avatarEmoji: "🕷️",
+      equipment: "Bodyweight",
+      program: {
+        exercises: [
+          ...mkDay("back", "Hypertrophy", [
+            mkBlock("Warm-up", [mkMove("Scap Pull-Aparts", "2", "15"), mkMove("Quadrupedal Crawl", "2", "30s")]),
+            mkBlock("Primary", [mkMove("Weighted Chin-Up", "4", "6–8", "120s"), mkMove("Climb-Up Practice", "4", "3–5", "120s")]),
+            mkBlock("Accessory", [mkMove("Front Lever Progression", "3", "5–8s hold", "90s"), mkMove("Hanging Leg Raise", "3", "10–12", "60s")]),
+          ])
+        ]
+      },
+      isPro: false,
+      imageUrl: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&q=80&w=1000"
+    },
+    {
+      slug: "speedforce-sprinter",
+      name: "Speedforce Sprinter (Inspired)",
+      type: "hero",
+      difficulty: "Elite Level",
+      avatarEmoji: "⚡",
+      equipment: "Full Gym",
+      program: {
+        exercises: [
+          ...mkDay("legs", "Strength", [
+            mkBlock("Primary", [mkMove("Trap Bar Deadlift", "5", "3–5", "150s"), mkMove("Bulgarian Split Squat", "4", "6–8/leg", "120s")]),
+            mkBlock("Accessory", [mkMove("Calf Raise", "4", "12–15", "60s"), mkMove("Nordic Curl", "3", "5–8", "90s")]),
+          ])
+        ]
+      },
+      isPro: false,
+      imageUrl: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&q=80&w=1000"
+    },
+    {
+      slug: "gamma-juggernaut",
+      name: "Gamma Juggernaut (Inspired)",
+      type: "villain",
+      difficulty: "Elite Level",
+      avatarEmoji: "💪",
+      equipment: "Full Gym",
+      program: {
+        exercises: [
+          ...mkDay("legs", "Strength", [
+            mkBlock("Primary", [mkMove("Back Squat", "5", "3–5", "180s"), mkMove("Conventional Deadlift", "5", "3–5", "180s")]),
+            mkBlock("Accessory", [mkMove("Front Squat", "3", "6–8", "120s"), mkMove("Good Morning", "3", "8–10", "90s")]),
+          ])
+        ]
+      },
+      isPro: true,
+      imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=1000"
+    },
+    {
+      slug: "thunder-god",
+      name: "Thunder God (Inspired)",
+      type: "hero",
+      difficulty: "Advanced",
+      avatarEmoji: "🔨",
+      equipment: "Full Gym",
+      program: {
+        exercises: [
+          ...mkDay("push", "Strength", [
+            mkBlock("Primary", [mkMove("Overhead Press", "5", "3–5", "150s"), mkMove("Push Press", "4", "5–6", "120s")]),
+            mkBlock("Accessory", [mkMove("Dumbbell Overhead Press", "3", "8–10", "90s"), mkMove("Landmine Press", "3", "10–12", "75s")]),
+          ])
+        ]
+      },
+      isPro: false,
+      imageUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1000"
+    }
+  ];
+
+  // Add original characters back with fixed program structure
+  const originalCharacters: InsertWorkout[] = [
     {
       slug: "one-punch",
       name: "The One Punch",
       description: "100 Pushups, 100 Situps, 100 Squats, and a 10km Run.",
       type: "hero",
       difficulty: "Elite Level",
-      program: [
-        { name: "Pushups", reps: "100" },
-        { name: "Situps", reps: "100" },
-        { name: "Squats", reps: "100" },
-        { name: "Run", distance: "10km" }
-      ],
+      program: {
+        exercises: [
+          { name: "Pushups", reps: "100" },
+          { name: "Situps", reps: "100" },
+          { name: "Squats", reps: "100" },
+          { name: "Run", reps: "10km" }
+        ]
+      },
       isPro: false,
       avatarEmoji: "✨",
       equipment: "Bodyweight",
       imageUrl: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?auto=format&fit=crop&q=80&w=1000"
-    },
-    {
-      slug: "dark-knight",
-      name: "The Dark Knight",
-      description: "Functional strength and agility training for the night.",
-      type: "hero",
-      difficulty: "Advanced",
-      program: [
-        { name: "Pull-ups", reps: "3x12" },
-        { name: "Box Jumps", reps: "3x15" },
-        { name: "Shadow Boxing", duration: "10 min" }
-      ],
-      isPro: false,
-      avatarEmoji: "🦇",
-      equipment: "Bodyweight",
-      imageUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1000"
-    },
-     {
-      slug: "amazon-warrior",
-      name: "Amazon Warrior",
-      description: "Agility, swordplay simulation, and core strength.",
-      type: "hero",
-      difficulty: "Intermediate",
-      program: [
-        { name: "Lunge Jumps", reps: "3x20" },
-        { name: "Plank", duration: "2 min" },
-        { name: "Burpees", reps: "3x15" }
-      ],
-      isPro: false,
-      avatarEmoji: "🌟",
-      equipment: "Bodyweight",
-      imageUrl: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&q=80&w=1000"
     }
   ];
 
-  const villains: InsertWorkout[] = [
-    {
-      slug: "mad-titan",
-      name: "The Mad Titan",
-      description: "Heavy lifting to balance the universe.",
-      type: "villain",
-      difficulty: "Elite Level",
-      program: [
-        { name: "Deadlift", reps: "5x5 (Heavy)" },
-        { name: "Military Press", reps: "5x5" },
-        { name: "Farmer's Walk", distance: "50m x 4" }
-      ],
-      isPro: true, // PRO ONLY
-      avatarEmoji: "🛡️",
-      equipment: "Full Gym",
-      imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=1000"
-    },
-    {
-      slug: "symbiote",
-      name: "The Symbiote",
-      description: "Explosive power and unpredictable movement.",
-      type: "villain",
-      difficulty: "Advanced",
-      program: [
-        { name: "Muscle-ups", reps: "3xMax" },
-        { name: "Sprints", reps: "10x100m" },
-        { name: "Spider Crawls", distance: "20m x 3" }
-      ],
-      isPro: true,
-      avatarEmoji: "🥊",
-      equipment: "Full Gym",
-      imageUrl: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&q=80&w=1000"
-    }
-  ];
-
-  for (const w of heroes) await storage.createWorkout(w);
-  for (const w of villains) await storage.createWorkout(w);
+  for (const w of [...originalCharacters, ...newCharactersRaw]) {
+    await storage.createWorkout({
+      ...w,
+      description: (w as any).description || "A legendary workout program inspired by the character's unique abilities."
+    });
+  }
   
-  console.log("Seeded database with heroes and villains.");
+  console.log("Seeded database with new and original characters.");
 }
