@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Base Theme - Dark Modern */
+  --background: 224 71% 4%;
+  --foreground: 213 31% 91%;
+  
+  --card: 224 71% 6%;
+  --card-foreground: 213 31% 91%;
+  
+  --popover: 224 71% 4%;
+  --popover-foreground: 215 20.2% 65.1%;
+  
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  
+  --secondary: 222.2 47.4% 11.2%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --muted: 223 47% 11%;
+  --muted-foreground: 215.4 16.3% 56.9%;
+  
+  --accent: 216 34% 17%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+  
+  --border: 216 34% 17%;
+  --input: 216 34% 17%;
+  --ring: 216 34% 17%;
+  
+  --radius: 0.75rem;
+
+  /* Custom Identity Colors */
+  --hero: 190 90% 50%;     /* Cyan/Electric Blue */
+  --villain: 280 80% 60%;  /* Deep Purple/Magenta */
+  --gold: 45 90% 60%;      /* Achievement Gold */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/20;
+    font-family: var(--font-body);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .text-hero {
+    color: hsl(var(--hero));
+  }
+  .bg-hero {
+    background-color: hsl(var(--hero));
+  }
+  .text-villain {
+    color: hsl(var(--villain));
+  }
+  .bg-villain {
+    background-color: hsl(var(--villain));
+  }
+  
+  .glass-panel {
+    @apply bg-background/60 backdrop-blur-md border border-white/5 shadow-xl;
+  }
+  
+  .hero-gradient {
+    background: linear-gradient(135deg, hsl(224 71% 4%) 0%, hsl(190 90% 50% / 0.1) 100%);
+  }
+  
+  .villain-gradient {
+    background: linear-gradient(135deg, hsl(224 71% 4%) 0%, hsl(280 80% 60% / 0.1) 100%);
+  }
+}
