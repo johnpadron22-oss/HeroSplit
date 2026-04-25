@@ -1,23 +1,54 @@
+import { useState, type FormEvent } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Zap, TrendingUp } from "lucide-react";
-import { Link } from "wouter";
+import { ArrowRight, Shield, Zap, TrendingUp, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1, 
-      transition: { 
-        staggerChildren: 0.1 
-      } 
-    }
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
+    visible: { opacity: 1, y: 0 },
   };
+
+  const handleAuth = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      if (mode === "login") {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+      }
+      setLocation("/home");
+    } catch (err: any) {
+      setError(err.message ?? "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openLogin = () => { setMode("login"); setError(""); setOpen(true); };
+  const openSignup = () => { setMode("signup"); setError(""); setOpen(true); };
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
@@ -32,15 +63,13 @@ export default function Landing() {
           <span className="text-hero">HERO</span>
           <span className="text-white">SPLIT</span>
         </div>
-        <a href="/api/login">
-          <Button variant="outline" className="rounded-full px-6 hover:bg-white/5">
-            Login
-          </Button>
-        </a>
+        <Button onClick={openLogin} variant="outline" className="rounded-full px-6 hover:bg-white/5">
+          Login
+        </Button>
       </nav>
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-32">
-        <motion.div 
+        <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -52,53 +81,40 @@ export default function Landing() {
           </motion.div>
 
           <motion.h1 variants={itemVariants} className="text-5xl md:text-7xl font-display font-black tracking-tight leading-[1.1] mb-6">
-            Train Like Your <br/>
+            Train Like Your <br />
             <span className="bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">Favorite Anime Hero.</span>
           </motion.h1>
 
           <motion.p variants={itemVariants} className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed">
-            From "100 Pushups" to "God Level" intensity. 
+            From "100 Pushups" to "God Level" intensity.
             Unlock themed workout plans, track your stats, and build your physique.
           </motion.p>
 
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a href="/api/login">
-              <Button size="lg" className="h-14 px-8 rounded-full text-lg bg-white text-black hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-                Start Training <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </a>
-            <Button variant="ghost" className="h-14 px-8 rounded-full text-lg hover:bg-white/5">
-              View Workouts
+            <Button
+              size="lg"
+              onClick={openSignup}
+              className="h-14 px-8 rounded-full text-lg bg-white text-black hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+            >
+              Start Training <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <Button onClick={openLogin} variant="ghost" className="h-14 px-8 rounded-full text-lg hover:bg-white/5">
+              Already have an account
             </Button>
           </motion.div>
         </motion.div>
 
         {/* Feature Grid */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.8 }}
           className="grid md:grid-cols-3 gap-6 mt-32"
         >
           {[
-            { 
-              icon: Shield, 
-              title: "Hero Workouts", 
-              desc: "Beginner to advanced calisthenics & weight training inspired by protagonists.",
-              color: "text-cyan-400" 
-            },
-            { 
-              icon: Zap, 
-              title: "Villain Intensity", 
-              desc: "Unlock Pro to access brutal, high-volume splits designed for pure power.",
-              color: "text-purple-400" 
-            },
-            { 
-              icon: TrendingUp, 
-              title: "Stat Tracking", 
-              desc: "Level up your profile with streaks, heatmaps, and achievement badges.",
-              color: "text-yellow-400" 
-            },
+            { icon: Shield, title: "Hero Workouts", desc: "Beginner to advanced calisthenics & weight training inspired by protagonists.", color: "text-cyan-400" },
+            { icon: Zap, title: "Villain Intensity", desc: "Unlock Pro to access brutal, high-volume splits designed for pure power.", color: "text-purple-400" },
+            { icon: TrendingUp, title: "Stat Tracking", desc: "Level up your profile with streaks, heatmaps, and achievement badges.", color: "text-yellow-400" },
           ].map((item, i) => (
             <div key={i} className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors backdrop-blur-sm">
               <item.icon className={`w-10 h-10 ${item.color} mb-4`} />
@@ -108,6 +124,61 @@ export default function Landing() {
           ))}
         </motion.div>
       </main>
+
+      {/* Auth Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10">
+          <DialogHeader>
+            <DialogTitle className="font-display font-black text-2xl tracking-tight">
+              {mode === "login" ? "Welcome back, hero." : "Begin your origin story."}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleAuth} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="hero@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-white/5 border-white/10"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="bg-white/5 border-white/10"
+              />
+            </div>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            <Button type="submit" disabled={loading} className="w-full h-11 rounded-full bg-white text-black hover:bg-gray-200">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === "login" ? "Login" : "Create Account"}
+            </Button>
+          </form>
+
+          <p className="text-center text-sm text-muted-foreground mt-2">
+            {mode === "login" ? "New here?" : "Already have an account?"}{" "}
+            <button
+              type="button"
+              onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }}
+              className="text-foreground underline underline-offset-2 hover:text-white"
+            >
+              {mode === "login" ? "Create an account" : "Log in"}
+            </button>
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { isAuthenticated } from "./auth";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { InsertWorkout, workouts } from "@shared/schema";
@@ -11,9 +11,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Setup Auth
-  await setupAuth(app);
-  registerAuthRoutes(app);
+  // Auth is handled via Supabase JWT — no session setup needed
 
   // === Workouts ===
   app.get(api.workouts.list.path, async (req, res) => {
@@ -41,13 +39,13 @@ export async function registerRoutes(
   
   // Logs
   app.get(api.logs.list.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const logs = await storage.getLogs(userId);
     res.json(logs);
   });
 
   app.post(api.logs.create.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const logData = { ...req.body, userId }; // Force userId from auth
     const log = await storage.createLog(logData);
     
@@ -75,7 +73,7 @@ export async function registerRoutes(
 
   // User Progress
   app.get(api.user.progress.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     
     let settings = await storage.getUserSettings(userId);
     if (!settings) {
@@ -94,7 +92,7 @@ export async function registerRoutes(
 
   // Mock Pro Upgrade
   app.post(api.user.togglePro.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const { isPro } = req.body;
     
     let settings = await storage.getUserSettings(userId);
@@ -104,8 +102,8 @@ export async function registerRoutes(
     res.json(updated);
   });
 
-  // Seed Data on startup
-  seedDatabase();
+  // Seed Data on startup (non-fatal — server runs even if DB is unreachable)
+  seedDatabase().catch((err) => console.warn("Seed skipped:", err.message));
 
   return httpServer;
 }
