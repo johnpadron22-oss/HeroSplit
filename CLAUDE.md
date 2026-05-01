@@ -12,7 +12,7 @@ HeroSplit is a superhero-themed fitness app. Users browse hero and villain worko
 | Animations | Framer Motion |
 | Backend | Node.js + Express 5 |
 | Database | PostgreSQL + Drizzle ORM |
-| Auth | Replit Auth (OpenID Connect) + Passport.js |
+| Auth | Supabase Auth (JWT) — `server/auth.ts` middleware |
 | Build | Vite (client) + esbuild (server) |
 
 ## Directory Structure
@@ -59,7 +59,7 @@ shared/
 | Table | Key Columns |
 |-------|------------|
 | `users` | id, username, email, profileImageUrl, createdAt |
-| `sessions` | Managed by Replit Auth — do not touch |
+| `sessions` | Legacy table — auth is now JWT-based via Supabase |
 | `workouts` | id, slug, name, type (hero/villain/custom), difficulty, isPro, program (JSON), equipment (JSON) |
 | `workout_logs` | id, userId, workoutName, date, duration, exercises (JSON), completedAt |
 | `achievements` | id, userId, achievementId, unlockedAt |
@@ -116,3 +116,44 @@ npm run build        # Production build
 ```
 
 Each agent is designed to hand off to the next. Run them in sequence for a full feature cycle.
+
+## SPARC Methodology — Slash Commands
+
+```
+/sparc [objective]            →  SPARC orchestrator: spec → architect → code → test → ship
+/sparc-architect [spec]       →  System design: DB schema, API contracts, file map
+/sparc-code [plan]            →  Auto-coder: implements from architectural plan
+/sparc-tdd [feature]          →  TDD: writes failing tests, then minimal implementation
+/sparc-debug [bug]            →  Debugger: root-cause analysis and fix
+/sparc-security-review [scope]→  Security audit: OWASP, secrets, auth, RLS
+/sparc-supabase-admin [task]  →  Supabase: migrations, RLS policies, auth config
+/sparc-docs [what]            →  Documentation: API docs, ADRs, onboarding
+/sparc-optimizer [target]     →  Performance: queries, bundle size, renders
+```
+
+SPARC follows: **S**pecification → **P**seudocode → **A**rchitecture → **R**efinement → **C**ompletion
+
+## Agent Definitions
+
+Five specialized agents are defined in `.claude/agents/`:
+- `architect.yaml` — system design, API design, documentation
+- `coder.yaml` — code generation, refactoring, debugging
+- `reviewer.yaml` — code review, quality analysis, best practices
+- `security-architect.yaml` — threat modeling, vulnerability analysis
+- `tester.yaml` — unit testing, integration testing, coverage
+
+## Concurrency Rules (from Ruflo)
+
+- **One message = all related operations.** Batch all independent reads, writes, and tool calls in a single message.
+- **Parallel by default.** Never serialize operations that have no dependencies between them.
+- **No status polling.** After spawning background work, wait for results — don't loop-check.
+- **Files under 500 lines.** Split into focused modules if a file grows larger.
+
+## Behavioral Rules (Always Enforced)
+
+- Do exactly what was asked — nothing more, nothing less
+- NEVER create files unless absolutely necessary
+- ALWAYS prefer editing existing files
+- NEVER commit `.env` files or credentials
+- NEVER hard-code API keys — always use environment variables
+- ALWAYS read a file before editing it
