@@ -63,7 +63,12 @@ export function WorkoutCard({ workout, isLocked = false, onUnlock }: WorkoutCard
         </div>
 
         {/* Content */}
-        <h3 className="text-xl font-bold font-display mb-2 line-clamp-1">{workout.name}</h3>
+        <h3 className="text-xl font-bold font-display mb-1 line-clamp-1">{workout.name}</h3>
+        {workout.series && (
+          <div className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-2">
+            {workout.series}
+          </div>
+        )}
         <p className="text-sm text-muted-foreground mb-6 line-clamp-2 flex-grow">
           {workout.description}
         </p>

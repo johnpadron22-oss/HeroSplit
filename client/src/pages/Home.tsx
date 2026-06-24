@@ -16,6 +16,7 @@ export default function Home() {
   const { user, logout, isLoggingOut } = useAuth();
   const { data: heroWorkouts, isLoading: loadingHero } = useWorkouts('hero');
   const { data: villainWorkouts, isLoading: loadingVillain } = useWorkouts('villain');
+  const { data: animeWorkouts, isLoading: loadingAnime } = useWorkouts('anime');
   const { data: progress, isLoading: loadingProgress } = useUserProgress();
   const { mutate: togglePro } = useTogglePro(); // For testing purposes to cancel
   const { toast } = useToast();
@@ -79,9 +80,12 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         <Tabs defaultValue="browse" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto p-1 bg-white/5 rounded-full">
+          <TabsList className="grid w-full grid-cols-4 max-w-xl mx-auto p-1 bg-white/5 rounded-full">
             <TabsTrigger value="browse" className="rounded-full data-[state=active]:bg-hero data-[state=active]:text-black font-semibold">
-              Browse
+              Heroes
+            </TabsTrigger>
+            <TabsTrigger value="anime" className="rounded-full data-[state=active]:bg-amber-500 data-[state=active]:text-black font-semibold">
+              Anime
             </TabsTrigger>
             <TabsTrigger value="villains" className="rounded-full data-[state=active]:bg-villain data-[state=active]:text-white font-semibold">
               Villains
@@ -107,6 +111,44 @@ export default function Home() {
                 ))}
                 {(!heroWorkouts || heroWorkouts.length === 0) && (
                   <div className="col-span-full text-center py-12 text-muted-foreground">No workouts found. Run seed script.</div>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* === ANIME WORKOUTS === */}
+          <TabsContent value="anime" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-display text-amber-400">Anime Arc</h2>
+              <span className="text-xs font-mono text-amber-400 uppercase tracking-widest border border-amber-500/20 px-2 py-1 rounded bg-amber-500/10">Pro Only</span>
+            </div>
+
+            {!isPro && (
+              <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-amber-900/40 to-background border border-amber-500/30 flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-1">Unlock Anime Mode</h3>
+                  <p className="text-sm text-amber-200/70">Train like the legends — DBZ, Naruto, JJK, One Piece, and more.</p>
+                </div>
+                <Button onClick={() => setShowPaywall(true)} className="bg-amber-500 text-black hover:bg-amber-400 font-bold">
+                  Unlock
+                </Button>
+              </div>
+            )}
+
+            {loadingAnime ? (
+              <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {animeWorkouts?.map((workout) => (
+                  <WorkoutCard
+                    key={workout.id}
+                    workout={workout}
+                    isLocked={!isPro}
+                    onUnlock={() => setShowPaywall(true)}
+                  />
+                ))}
+                {(!animeWorkouts || animeWorkouts.length === 0) && (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">No anime workouts found.</div>
                 )}
               </div>
             )}

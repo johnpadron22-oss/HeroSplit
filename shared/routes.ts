@@ -20,7 +20,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/workouts',
       input: z.object({
-        type: z.enum(['hero', 'villain', 'custom']).optional(),
+        type: z.enum(['hero', 'villain', 'custom', 'anime']).optional(),
       }).optional(),
       responses: {
         200: z.array(z.custom<typeof workouts.$inferSelect>()),
