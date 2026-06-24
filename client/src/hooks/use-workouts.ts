@@ -5,7 +5,7 @@ import type { InsertWorkoutLog } from "@shared/schema";
 
 // === Workouts ===
 
-export function useWorkouts(type?: 'hero' | 'villain' | 'custom') {
+export function useWorkouts(type?: 'hero' | 'villain' | 'custom' | 'anime') {
   return useQuery({
     queryKey: [api.workouts.list.path, type],
     queryFn: async () => {
