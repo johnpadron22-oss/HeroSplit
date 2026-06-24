@@ -41,13 +41,13 @@ export async function registerRoutes(
   
   // Logs
   app.get(api.logs.list.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const logs = await storage.getLogs(userId);
     res.json(logs);
   });
 
   app.post(api.logs.create.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const logData = { ...req.body, userId }; // Force userId from auth
     const log = await storage.createLog(logData);
     
@@ -75,7 +75,7 @@ export async function registerRoutes(
 
   // User Progress
   app.get(api.user.progress.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     
     let settings = await storage.getUserSettings(userId);
     if (!settings) {
@@ -94,7 +94,7 @@ export async function registerRoutes(
 
   // Mock Pro Upgrade
   app.post(api.user.togglePro.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const { isPro } = req.body;
     
     let settings = await storage.getUserSettings(userId);
