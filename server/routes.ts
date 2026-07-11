@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { isAuthenticated } from "./auth";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { InsertWorkout, workouts } from "@shared/schema";
@@ -11,9 +11,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Setup Auth
-  await setupAuth(app);
-  registerAuthRoutes(app);
+  // Auth is handled via Supabase JWT — no session setup needed
 
   // === Workouts ===
   app.get(api.workouts.list.path, async (req, res) => {
@@ -104,8 +102,8 @@ export async function registerRoutes(
     res.json(updated);
   });
 
-  // Seed Data on startup
-  seedDatabase();
+  // Seed Data on startup (non-fatal — server runs even if DB is unreachable)
+  seedDatabase().catch((err) => console.warn("Seed skipped:", err.message));
 
   return httpServer;
 }
