@@ -1,133 +1,217 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
+import { useState } from "react";
+import { db, id } from "@/lib/db";
 import { useToast } from "@/hooks/use-toast";
-import type { InsertWorkoutLog } from "@shared/schema";
+import { format } from "date-fns";
 
-// === Workouts ===
+// ── Types ────────────────────────────────────────────────────────────────────
 
-export function useWorkouts(type?: 'hero' | 'villain' | 'custom' | 'anime') {
-  return useQuery({
-    queryKey: [api.workouts.list.path, type],
-    queryFn: async () => {
-      const url = type 
-        ? `${api.workouts.list.path}?type=${type}` 
-        : api.workouts.list.path;
-        
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch workouts");
-      return api.workouts.list.responses[200].parse(await res.json());
-    },
-  });
+export interface Workout {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  type: string;
+  difficulty: string;
+  program: Record<string, unknown>;
+  imageUrl?: string;
+  avatarEmoji?: string;
+  equipment?: string;
+  series?: string;
+  workoutStyle?: string;
+  isPro: boolean;
+}
+
+export interface WorkoutLog {
+  id: string;
+  userId: string;
+  workoutId?: string;
+  workoutName: string;
+  date: string;
+  duration: number;
+  completedAt: number;
+}
+
+export interface UserProfile {
+  id: string;
+  userId: string;
+  isPro: boolean;
+  currentStreak: number;
+  longestStreak: number;
+  totalWorkouts: number;
+  stripeCustomerId?: string;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function computeStreak(logs: WorkoutLog[]): number {
+  if (!logs.length) return 0;
+  const dates = [...new Set(logs.map((l) => l.date))].sort().reverse();
+  const today = format(new Date(), "yyyy-MM-dd");
+  const yesterday = format(new Date(Date.now() - 86400000), "yyyy-MM-dd");
+  if (dates[0] !== today && dates[0] !== yesterday) return 0;
+  let streak = 0;
+  let expected = dates[0];
+  for (const date of dates) {
+    if (date === expected) {
+      streak++;
+      const d = new Date(expected);
+      d.setDate(d.getDate() - 1);
+      expected = format(d, "yyyy-MM-dd");
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+// ── Workouts ─────────────────────────────────────────────────────────────────
+
+export function useWorkouts(type?: "hero" | "villain" | "custom" | "anime") {
+  const query = type
+    ? { workouts: { $: { where: { type } } } }
+    : { workouts: {} };
+
+  const { data, isLoading, error } = db.useQuery(query);
+
+  return {
+    data: (data?.workouts ?? []) as Workout[],
+    isLoading,
+    error,
+  };
 }
 
 export function useWorkout(slug: string) {
-  return useQuery({
-    queryKey: [api.workouts.get.path, slug],
-    queryFn: async () => {
-      const url = buildUrl(api.workouts.get.path, { slug });
-      const res = await fetch(url, { credentials: "include" });
-      if (res.status === 404) return null;
-      if (!res.ok) throw new Error("Failed to fetch workout");
-      return api.workouts.get.responses[200].parse(await res.json());
-    },
-    enabled: !!slug,
-  });
+  const { data, isLoading, error } = db.useQuery(
+    slug ? { workouts: { $: { where: { slug } } } } : null
+  );
+
+  return {
+    data: (data?.workouts?.[0] ?? null) as Workout | null,
+    isLoading,
+    error,
+  };
 }
 
-// === Logs & History ===
-
-export function useWorkoutLogs() {
-  return useQuery({
-    queryKey: [api.logs.list.path],
-    queryFn: async () => {
-      const res = await fetch(api.logs.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch logs");
-      return api.logs.list.responses[200].parse(await res.json());
-    },
-  });
-}
+// ── Logs ─────────────────────────────────────────────────────────────────────
 
 export function useCreateLog() {
-  const queryClient = useQueryClient();
+  const { user } = db.useAuth();
   const { toast } = useToast();
+  const [isPending, setIsPending] = useState(false);
 
-  return useMutation({
-    mutationFn: async (data: InsertWorkoutLog) => {
-      const res = await fetch(api.logs.create.path, {
-        method: api.logs.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      
-      if (!res.ok) {
-        if (res.status === 400) {
-          const error = api.logs.create.responses[400].parse(await res.json());
-          throw new Error(error.message);
-        }
-        throw new Error("Failed to save workout log");
-      }
-      return api.logs.create.responses[201].parse(await res.json());
+  const mutate = async (
+    data: {
+      workoutId?: string | number;
+      workoutName: string;
+      duration: number;
+      date: string;
+      userId?: string;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.logs.list.path] });
-      queryClient.invalidateQueries({ queryKey: [api.user.progress.path] });
+    options?: { onSuccess?: () => void; onError?: (e: Error) => void }
+  ) => {
+    if (!user) return;
+    setIsPending(true);
+    try {
+      await db.transact([
+        db.tx.workoutLogs[id()].update({
+          userId: user.id,
+          workoutName: data.workoutName,
+          duration: data.duration,
+          date: data.date,
+          completedAt: Date.now(),
+          ...(data.workoutId ? { workoutId: String(data.workoutId) } : {}),
+        }),
+      ]);
       toast({
         title: "Workout Complete!",
-        description: "Your progress has been saved successfully.",
+        description: "Your progress has been saved.",
       });
-    },
-    onError: (error) => {
+      options?.onSuccess?.();
+    } catch (e) {
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to save workout log.",
         variant: "destructive",
       });
+      options?.onError?.(e as Error);
+    } finally {
+      setIsPending(false);
     }
-  });
+  };
+
+  return { mutate, isPending };
 }
 
-// === User Progress ===
+// ── User Progress ─────────────────────────────────────────────────────────────
 
 export function useUserProgress() {
-  return useQuery({
-    queryKey: [api.user.progress.path],
-    queryFn: async () => {
-      const res = await fetch(api.user.progress.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch progress");
-      return api.user.progress.responses[200].parse(await res.json());
+  const { user } = db.useAuth();
+
+  const { data, isLoading } = db.useQuery(
+    user
+      ? {
+          workoutLogs: { $: { where: { userId: user.id } } },
+          achievements: { $: { where: { userId: user.id } } },
+          userProfiles: { $: { where: { userId: user.id } } },
+        }
+      : null
+  );
+
+  const logs = (data?.workoutLogs ?? []) as WorkoutLog[];
+  const achievements = (data?.achievements ?? []) as {
+    id: string;
+    achievementId: string;
+    unlockedAt: number;
+  }[];
+  const profile = (data?.userProfiles?.[0] ?? null) as UserProfile | null;
+
+  return {
+    data: {
+      stats: {
+        isPro: profile?.isPro ?? false,
+        currentStreak: computeStreak(logs),
+        longestStreak: profile?.longestStreak ?? 0,
+        totalWorkouts: logs.length,
+      },
+      logs,
+      achievements,
+      profile,
     },
-  });
+    isLoading,
+  };
 }
 
-export function useTogglePro() {
-  const queryClient = useQueryClient();
+// ── Pro (Stripe Checkout) ─────────────────────────────────────────────────────
+
+export function useUpgradePro() {
+  const { user } = db.useAuth();
+  const [isPending, setIsPending] = useState(false);
   const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: async (isPro: boolean) => {
-      const res = await fetch(api.user.togglePro.path, {
-        method: api.user.togglePro.method,
+  const upgrade = async () => {
+    if (!user) return;
+    setIsPending(true);
+    try {
+      const res = await fetch("/api/create-checkout", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isPro }),
-        credentials: "include",
+        body: JSON.stringify({ userId: user.id, email: user.email }),
       });
-      
-      if (!res.ok) throw new Error("Failed to update subscription");
-      return api.user.togglePro.responses[200].parse(await res.json());
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [api.user.progress.path] });
-      // Also invalidate user auth query to update global state
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] }); 
-      
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch {
       toast({
-        title: data.isPro ? "Welcome to Pro!" : "Subscription Cancelled",
-        description: data.isPro 
-          ? "You now have access to all Villain workouts." 
-          : "You have reverted to the free tier.",
-        variant: "default",
+        title: "Error",
+        description: "Could not start checkout. Please try again.",
+        variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return { upgrade, isPending };
 }
+
+// Keep useTogglePro as alias so PaywallDialog compiles until it's updated
+export const useTogglePro = useUpgradePro;

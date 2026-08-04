@@ -1,47 +1,41 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { User } from "@shared/models/auth";
+import { useEffect } from "react";
+import { db } from "@/lib/db";
 
-async function fetchUser(): Promise<User | null> {
-  const response = await fetch("/api/auth/user", {
-    credentials: "include",
-  });
-
-  if (response.status === 401) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error(`${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-}
-
-async function logout(): Promise<void> {
-  window.location.href = "/api/logout";
-}
+const REDIRECT_URL = `${window.location.origin}/landing`;
 
 export function useAuth() {
-  const queryClient = useQueryClient();
-  const { data: user, isLoading } = useQuery<User | null>({
-    queryKey: ["/api/auth/user"],
-    queryFn: fetchUser,
-    retry: false,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const { user, isLoading } = db.useAuth();
 
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/auth/user"], null);
-    },
-  });
+  // Handle OAuth callback — exchange code for token when Google redirects back
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (!code) return;
+
+    db.auth
+      .exchangeCodeForToken({ code, redirectURL: REDIRECT_URL })
+      .then(() => {
+        window.history.replaceState({}, "", window.location.pathname);
+      })
+      .catch(console.error);
+  }, []);
+
+  const loginWithGoogle = async () => {
+    const url = await db.auth.createAuthorizationURL({
+      clientName: "google-web2",
+      redirectURL: REDIRECT_URL,
+    });
+    window.location.href = url;
+  };
+
+  const logout = () => db.auth.signOut();
 
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
-    logout: logoutMutation.mutate,
-    isLoggingOut: logoutMutation.isPending,
+    loginWithGoogle,
+    logout,
+    isLoggingOut: false,
   };
 }

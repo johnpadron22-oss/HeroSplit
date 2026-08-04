@@ -4,3 +4,10 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+.vercel
+.env
+.env.local
+.local/
+*.zip
+client_secret_*.json
+*.pdf

@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check, Crown, Loader2 } from "lucide-react";
-import { useTogglePro } from "@/hooks/use-workouts";
+import { useUpgradePro } from "@/hooks/use-workouts";
 
 interface PaywallDialogProps {
   open: boolean;
@@ -9,13 +9,7 @@ interface PaywallDialogProps {
 }
 
 export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
-  const { mutate: togglePro, isPending } = useTogglePro();
-
-  const handleSubscribe = () => {
-    togglePro(true, {
-      onSuccess: () => onOpenChange(false),
-    });
-  };
+  const { upgrade, isPending } = useUpgradePro();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -35,7 +29,7 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
             "Access all Villain Tier workouts",
             "Advanced analytics & progress tracking",
             "God-level difficulty challenges",
-            "Custom workout builder"
+            "Custom workout builder",
           ].map((feature, i) => (
             <div key={i} className="flex items-center gap-3">
               <div className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
@@ -47,20 +41,20 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
         </div>
 
         <DialogFooter className="flex-col gap-3 sm:gap-0">
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             className="w-full bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/25 transition-all"
-            onClick={handleSubscribe}
+            onClick={upgrade}
             disabled={isPending}
           >
             {isPending ? (
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
             ) : (
-              "Get Pro Access - $4.99/mo"
+              "Get Pro Access — $4.99/mo"
             )}
           </Button>
           <p className="text-xs text-center text-muted-foreground mt-2">
-            This is a demo. No actual payment will be processed.
+            Secured by Stripe. Cancel anytime.
           </p>
         </DialogFooter>
       </DialogContent>
