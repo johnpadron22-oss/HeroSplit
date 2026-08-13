@@ -29,6 +29,8 @@ export interface WorkoutLog {
   date: string;
   duration: number;
   completedAt: number;
+  xpEarned?: number;
+  setsData?: Array<{ name: string; sets: Array<{ weight: string; reps: string }> }>;
 }
 
 export interface UserProfile {
@@ -38,6 +40,7 @@ export interface UserProfile {
   currentStreak: number;
   longestStreak: number;
   totalWorkouts: number;
+  totalXP?: number;
   stripeCustomerId?: string;
   path?: "hero" | "villain";
   archetype?: string;
@@ -103,6 +106,12 @@ export function useCreateLog() {
   const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
 
+  // Also query the user's profile so we can update totalXP
+  const { data: profileData } = db.useQuery(
+    user ? { userProfiles: { $: { where: { userId: user.id } } } } : null
+  );
+  const profile = profileData?.userProfiles?.[0] ?? null;
+
   const mutate = async (
     data: {
       workoutId?: string | number;
@@ -110,13 +119,15 @@ export function useCreateLog() {
       duration: number;
       date: string;
       userId?: string;
+      xpEarned?: number;
+      setsData?: Array<{ name: string; sets: Array<{ weight: string; reps: string }> }>;
     },
     options?: { onSuccess?: () => void; onError?: (e: Error) => void }
   ) => {
     if (!user) return;
     setIsPending(true);
     try {
-      await db.transact([
+      const transactions: any[] = [
         db.tx.workoutLogs[id()].update({
           userId: user.id,
           workoutName: data.workoutName,
@@ -124,11 +135,24 @@ export function useCreateLog() {
           date: data.date,
           completedAt: Date.now(),
           ...(data.workoutId ? { workoutId: String(data.workoutId) } : {}),
+          ...(data.xpEarned !== undefined ? { xpEarned: data.xpEarned } : {}),
+          ...(data.setsData ? { setsData: data.setsData } : {}),
         }),
-      ]);
+      ];
+
+      // Update profile: increment totalXP
+      if (profile && data.xpEarned) {
+        transactions.push(
+          db.tx.userProfiles[profile.id].update({
+            totalXP: (profile.totalXP ?? 0) + data.xpEarned,
+          })
+        );
+      }
+
+      await db.transact(transactions);
       toast({
         title: "Workout Complete!",
-        description: "Your progress has been saved.",
+        description: `+${data.xpEarned ?? 0} XP earned. Your progress has been saved.`,
       });
       options?.onSuccess?.();
     } catch (e) {

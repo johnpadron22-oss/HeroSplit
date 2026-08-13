@@ -23,6 +23,8 @@ const _schema = i.schema({
       date: i.string().indexed(), // YYYY-MM-DD
       duration: i.number(), // minutes
       completedAt: i.number(), // epoch ms
+      xpEarned: i.number().optional(), // XP from this session
+      setsData: i.json().optional(),   // [{ name, sets: [{weight, reps}] }]
     }),
     achievements: i.entity({
       userId: i.string().indexed(),
@@ -41,6 +43,7 @@ const _schema = i.schema({
       archetype: i.string().optional(),        // e.g. "dark-vigilante"
       alias: i.string().optional(),            // user's chosen name
       experienceLevel: i.string().optional(),  // "beginner" | "intermediate" | "advanced" | "veteran"
+      totalXP: i.number().optional(),          // cumulative XP across all sessions
     }),
   },
 });

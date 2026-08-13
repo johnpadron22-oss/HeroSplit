@@ -6,7 +6,8 @@ import { WorkoutCard } from "@/components/WorkoutCard";
 import { PaywallDialog } from "@/components/PaywallDialog";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
-import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp } from "lucide-react";
+import { ProfileCard } from "@/components/ProfileCard";
+import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [showPaywall, setShowPaywall] = useState(false);
+  const [expandedLog, setExpandedLog] = useState<string | null>(null);
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const { data: heroWorkouts, isLoading: loadingHero } = useWorkouts("hero");
@@ -244,17 +246,27 @@ export default function Home() {
           </TabsContent>
 
           {/* === PROGRESS === */}
-          <TabsContent value="progress" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <TabsContent value="progress" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {loadingProgress ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Profile / Identity Card */}
+                {progress?.profile && (
+                  <ProfileCard
+                    profile={progress.profile}
+                    totalWorkouts={progress.stats.totalWorkouts}
+                    currentStreak={progress.stats.currentStreak}
+                  />
+                )}
+
+                {/* Quick stats row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="bg-card border border-white/5 p-4 rounded-xl">
                     <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
-                      <Flame className="w-4 h-4 text-orange-500" /> Current Streak
+                      <Flame className="w-4 h-4 text-orange-500" /> Streak
                     </div>
                     <div className="text-3xl font-display font-bold">
                       {progress?.stats?.currentStreak ?? 0}
@@ -262,7 +274,7 @@ export default function Home() {
                   </div>
                   <div className="bg-card border border-white/5 p-4 rounded-xl">
                     <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
-                      <Trophy className="w-4 h-4 text-yellow-500" /> Best Streak
+                      <Trophy className="w-4 h-4 text-yellow-500" /> Best
                     </div>
                     <div className="text-3xl font-display font-bold">
                       {progress?.stats?.longestStreak ?? 0}
@@ -270,7 +282,7 @@ export default function Home() {
                   </div>
                   <div className="bg-card border border-white/5 p-4 rounded-xl">
                     <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
-                      <Dumbbell className="w-4 h-4 text-cyan-500" /> Total Workouts
+                      <Dumbbell className="w-4 h-4 text-cyan-500" /> Sessions
                     </div>
                     <div className="text-3xl font-display font-bold">
                       {progress?.stats?.totalWorkouts ?? 0}
@@ -278,15 +290,102 @@ export default function Home() {
                   </div>
                   <div className="bg-card border border-white/5 p-4 rounded-xl">
                     <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
-                      <Calendar className="w-4 h-4 text-purple-500" /> Active Days
+                      <Zap className="w-4 h-4 text-yellow-400" /> Total XP
                     </div>
                     <div className="text-3xl font-display font-bold">
-                      {progress?.logs?.length ?? 0}
+                      {(progress?.profile?.totalXP ?? 0).toLocaleString()}
                     </div>
                   </div>
                 </div>
 
-                {/* Training tiers guide */}
+                {/* Activity chart */}
+                <div className="bg-card border border-white/5 p-6 rounded-2xl">
+                  <h3 className="text-lg font-bold mb-6">Workout Activity</h3>
+                  <ProgressChart logs={progress?.logs ?? []} />
+                </div>
+
+                {/* Workout History with expandable sets detail */}
+                <div className="bg-card border border-white/5 p-6 rounded-2xl">
+                  <h3 className="text-lg font-bold mb-4">Workout History</h3>
+                  <div className="space-y-2">
+                    {(progress?.logs ?? [])
+                      .slice()
+                      .sort((a, b) => b.completedAt - a.completedAt)
+                      .slice(0, 10)
+                      .map((log) => {
+                        const isExpanded = expandedLog === log.id;
+                        const hasSets = Array.isArray(log.setsData) && log.setsData.length > 0;
+                        return (
+                          <div
+                            key={log.id}
+                            className="rounded-xl border border-white/5 overflow-hidden"
+                          >
+                            {/* Log header row */}
+                            <button
+                              className="w-full flex items-center gap-3 p-3 hover:bg-white/5 transition-colors text-left"
+                              onClick={() => setExpandedLog(isExpanded ? null : log.id)}
+                            >
+                              <div className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                                <Dumbbell className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-sm truncate">{log.workoutName}</div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                  <span>{log.date}</span>
+                                  <span>·</span>
+                                  <span>{log.duration}m</span>
+                                  {log.xpEarned ? (
+                                    <>
+                                      <span>·</span>
+                                      <span className="text-yellow-400 font-semibold">+{log.xpEarned} XP</span>
+                                    </>
+                                  ) : null}
+                                </div>
+                              </div>
+                              {hasSets && (
+                                <div className="shrink-0 text-muted-foreground">
+                                  {isExpanded
+                                    ? <ChevronUp className="w-4 h-4" />
+                                    : <ChevronDown className="w-4 h-4" />}
+                                </div>
+                              )}
+                            </button>
+
+                            {/* Expanded sets detail */}
+                            {isExpanded && hasSets && (
+                              <div className="border-t border-white/5 px-3 pb-3 pt-2 space-y-3">
+                                {log.setsData!.map((exercise, ei) => (
+                                  <div key={ei}>
+                                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                                      {exercise.name}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {exercise.sets.map((s, si) => (
+                                        <div
+                                          key={si}
+                                          className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-xs font-mono"
+                                        >
+                                          {s.weight !== "BW" ? `${s.weight} × ` : ""}{s.reps}
+                                          {s.weight === "BW" ? " reps" : ""}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                    })}
+                    {(!progress?.logs || progress.logs.length === 0) && (
+                      <div className="text-center text-muted-foreground py-8 text-sm">
+                        No workouts logged yet. Start your first battle!
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Training system guide */}
                 <div className="bg-card border border-white/5 p-6 rounded-2xl space-y-4">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-green-400" />
@@ -296,7 +395,6 @@ export default function Home() {
                     {[
                       {
                         tier: "Foundation",
-                        tag: "Beginner",
                         color: "text-green-400 bg-green-500/10 border-green-500/20",
                         sessions: "3x / week",
                         time: "40–60 min",
@@ -305,7 +403,6 @@ export default function Home() {
                       },
                       {
                         tier: "Blueprint",
-                        tag: "Intermediate",
                         color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",
                         sessions: "4x / week",
                         time: "55–75 min",
@@ -314,14 +411,13 @@ export default function Home() {
                       },
                       {
                         tier: "Nemesis",
-                        tag: "Advanced",
                         color: "text-purple-400 bg-purple-500/10 border-purple-500/20",
                         sessions: "5–6x / week",
                         time: "60–90 min",
                         style: "Push / Pull / Legs",
                         desc: "Planned intensity, specialization, fatigue monitoring, deloads.",
                       },
-                    ].map(({ tier, tag, color, sessions, time, style, desc }) => (
+                    ].map(({ tier, color, sessions, time, style, desc }) => (
                       <div key={tier} className={cn("p-4 rounded-xl border", color.split(" ").slice(1).join(" "))}>
                         <div className={cn("text-xs font-bold uppercase tracking-widest mb-1", color.split(" ")[0])}>
                           {tier} Series
@@ -336,41 +432,8 @@ export default function Home() {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed border-t border-white/5 pt-3">
-                    Use <strong>double progression</strong>: add reps each session until you hit the top of the range across all sets, then increase weight next time. Never jump tiers solely based on XP — advance when technique is solid and sessions feel manageable.
+                    <strong>Double progression:</strong> add reps each session until you hit the top of the range across all sets, then add weight next time. Never jump tiers for XP alone — advance when technique is solid.
                   </p>
-                </div>
-
-                <div className="bg-card border border-white/5 p-6 rounded-2xl">
-                  <h3 className="text-lg font-bold mb-6">Workout Activity</h3>
-                  <ProgressChart logs={progress?.logs ?? []} />
-                </div>
-
-                <div className="bg-card border border-white/5 p-6 rounded-2xl">
-                  <h3 className="text-lg font-bold mb-4">Recent Logs</h3>
-                  <div className="space-y-3">
-                    {(progress?.logs ?? []).slice(0, 5).map((log) => (
-                      <div
-                        key={log.id}
-                        className="flex justify-between items-center p-3 hover:bg-white/5 rounded-lg transition-colors border border-transparent hover:border-white/5"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                            <Dumbbell className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-sm">{log.workoutName}</div>
-                            <div className="text-xs text-muted-foreground">{log.date}</div>
-                          </div>
-                        </div>
-                        <div className="font-mono text-sm">{log.duration}m</div>
-                      </div>
-                    ))}
-                    {(!progress?.logs || progress.logs.length === 0) && (
-                      <div className="text-center text-muted-foreground py-4 text-sm">
-                        No workout history yet.
-                      </div>
-                    )}
-                  </div>
                 </div>
               </>
             )}

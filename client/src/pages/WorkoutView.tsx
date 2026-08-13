@@ -215,11 +215,21 @@ export default function WorkoutView() {
       colors: isVillain ? ["#a855f7", "#7e22ce", "#ec4899"] : ["#22d3ee", "#0891b2", "#facc15"],
     });
 
+    // Build setsData: map exercise index → exercise name + completed sets
+    const setsData = exercises
+      .map((ex, i) => ({
+        name: ex.name,
+        sets: completedSets[i] ?? [],
+      }))
+      .filter((e) => e.sets.length > 0);
+
     createLog({
       workoutId: workout.id,
       workoutName: workout.name,
       duration: Math.max(1, Math.ceil(elapsedRef.current / 60)),
       date: format(new Date(), "yyyy-MM-dd"),
+      xpEarned: totalXp,
+      setsData,
     });
   };
 
