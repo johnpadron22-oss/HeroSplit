@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Lock, Clock, Activity, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Workout } from "@shared/schema";
+import type { Workout } from "@/hooks/use-workouts";
 import { cn } from "@/lib/utils";
 
 interface WorkoutCardProps {
