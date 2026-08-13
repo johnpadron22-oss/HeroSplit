@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeft, CheckCircle, ChevronRight, Dumbbell,
   Flame, Loader2, Play, SkipForward, Timer, Trophy, Zap,
+  Info, TrendingUp, Wind,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -19,6 +20,7 @@ interface Exercise {
   sets?: string;
   reps?: string;
   rest?: string;
+  notes?: string;
 }
 
 interface CompletedSet {
@@ -126,7 +128,14 @@ export default function WorkoutView() {
     );
   }
 
-  const program = workout.program as { exercises: Exercise[]; duration?: number };
+  const program = workout.program as {
+    exercises: Exercise[];
+    duration?: string | number;
+    rpe?: string;
+    warmup?: string;
+    notes?: string;
+    schedule?: string;
+  };
   const exercises: Exercise[] = program.exercises ?? [];
   const currentEx = exercises[exIndex];
   const totalSets = parseSetCount(currentEx?.sets);
@@ -243,7 +252,7 @@ export default function WorkoutView() {
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: "Exercises", value: exercises.length },
-              { label: "Est. Time", value: `${program.duration ?? 30}m` },
+              { label: "Est. Time", value: program.duration ? `${program.duration}m` : "30m" },
               { label: "XP Available", value: `~${exercises.reduce((s, e) => s + parseSetCount(e.sets) * 25, 0)}` },
             ].map(({ label, value }) => (
               <div key={label} className="bg-card border border-white/5 rounded-xl p-3 text-center">
@@ -253,12 +262,60 @@ export default function WorkoutView() {
             ))}
           </div>
 
+          {/* Warm-up guidance */}
+          {program.warmup && (
+            <div className={cn(
+              "flex items-start gap-3 p-4 rounded-2xl border",
+              isVillain
+                ? "bg-purple-500/5 border-purple-500/20"
+                : "bg-cyan-500/5 border-cyan-500/20"
+            )}>
+              <Wind className={cn("w-4 h-4 shrink-0 mt-0.5", accentClass)} />
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest mb-1 text-muted-foreground">Warm-Up First</div>
+                <p className="text-sm leading-snug">{program.warmup}</p>
+              </div>
+            </div>
+          )}
+
+          {/* RPE + Schedule tags */}
+          <div className="flex flex-wrap gap-2">
+            {program.rpe && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold">
+                <Flame className="w-3.5 h-3.5 text-orange-400" />
+                <span>RPE {program.rpe}</span>
+              </div>
+            )}
+            {program.schedule && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold">
+                <Timer className="w-3.5 h-3.5 text-blue-400" />
+                <span>{program.schedule}</span>
+              </div>
+            )}
+            {workout.series && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-400">
+                {workout.series}
+              </div>
+            )}
+          </div>
+
+          {/* Progression notes */}
+          {program.notes && (
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/[0.03] border border-white/10">
+              <TrendingUp className="w-4 h-4 shrink-0 mt-0.5 text-green-400" />
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest mb-1 text-muted-foreground">Progression</div>
+                <p className="text-sm leading-snug text-muted-foreground">{program.notes}</p>
+              </div>
+            </div>
+          )}
+
           {/* Exercise list */}
           <div className="space-y-2">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">Exercises</h2>
             {exercises.map((ex, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-white/5">
-                <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0", isVillain ? "bg-purple-500/10 text-purple-400" : "bg-cyan-500/10 text-cyan-400")}>
+              <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-card border border-white/5">
+                <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5", isVillain ? "bg-purple-500/10 text-purple-400" : "bg-cyan-500/10 text-cyan-400")}>
                   {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -267,8 +324,11 @@ export default function WorkoutView() {
                     {ex.sets ? `${ex.sets} sets` : ""}{ex.sets && ex.reps ? " × " : ""}{ex.reps ? ex.reps : ""}
                     {ex.rest ? ` · ${ex.rest} rest` : ""}
                   </div>
+                  {ex.notes && (
+                    <div className="text-[11px] text-muted-foreground/70 mt-0.5 italic">{ex.notes}</div>
+                  )}
                 </div>
-                <Dumbbell className="w-4 h-4 text-muted-foreground shrink-0" />
+                <Dumbbell className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
               </div>
             ))}
           </div>
@@ -339,6 +399,15 @@ export default function WorkoutView() {
             <Flame className="w-5 h-5" />
             <span>+{xpEarned} XP Earned</span>
           </div>
+
+          {/* Progression tip */}
+          {program.notes && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-green-500/5 border border-green-500/20 text-left">
+              <TrendingUp className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-green-300/80 leading-snug">{program.notes}</p>
+            </div>
+          )}
+
           <Link href="/" className="block">
             <Button size="lg" className={cn("w-full h-12 font-bold", btnClass)}>
               Back to HeroSplit
@@ -476,7 +545,7 @@ export default function WorkoutView() {
               </div>
 
               {/* Target */}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {currentEx.reps && (
                   <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm font-bold">
                     {currentEx.reps} <span className="text-muted-foreground font-normal text-xs">reps</span>
@@ -488,6 +557,14 @@ export default function WorkoutView() {
                   </div>
                 )}
               </div>
+
+              {/* Form cue */}
+              {currentEx.notes && (
+                <div className="flex items-start gap-2 mt-1 p-2.5 rounded-xl bg-white/[0.03] border border-white/10">
+                  <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground leading-snug">{currentEx.notes}</p>
+                </div>
+              )}
             </div>
           </motion.div>
         </AnimatePresence>

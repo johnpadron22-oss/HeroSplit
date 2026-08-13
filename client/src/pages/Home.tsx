@@ -6,7 +6,7 @@ import { WorkoutCard } from "@/components/WorkoutCard";
 import { PaywallDialog } from "@/components/PaywallDialog";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
-import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut } from "lucide-react";
+import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -284,6 +284,60 @@ export default function Home() {
                       {progress?.logs?.length ?? 0}
                     </div>
                   </div>
+                </div>
+
+                {/* Training tiers guide */}
+                <div className="bg-card border border-white/5 p-6 rounded-2xl space-y-4">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-green-400" />
+                    <h3 className="text-lg font-bold">Training System</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {[
+                      {
+                        tier: "Foundation",
+                        tag: "Beginner",
+                        color: "text-green-400 bg-green-500/10 border-green-500/20",
+                        sessions: "3x / week",
+                        time: "40–60 min",
+                        style: "Full Body A/B/C",
+                        desc: "Machines, dumbbells, stable patterns. Build confidence & technique.",
+                      },
+                      {
+                        tier: "Blueprint",
+                        tag: "Intermediate",
+                        color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",
+                        sessions: "4x / week",
+                        time: "55–75 min",
+                        style: "Upper / Lower Split",
+                        desc: "Free weights introduced. Split training builds muscle and strength.",
+                      },
+                      {
+                        tier: "Nemesis",
+                        tag: "Advanced",
+                        color: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+                        sessions: "5–6x / week",
+                        time: "60–90 min",
+                        style: "Push / Pull / Legs",
+                        desc: "Planned intensity, specialization, fatigue monitoring, deloads.",
+                      },
+                    ].map(({ tier, tag, color, sessions, time, style, desc }) => (
+                      <div key={tier} className={cn("p-4 rounded-xl border", color.split(" ").slice(1).join(" "))}>
+                        <div className={cn("text-xs font-bold uppercase tracking-widest mb-1", color.split(" ")[0])}>
+                          {tier} Series
+                        </div>
+                        <div className="font-bold text-sm mb-1">{style}</div>
+                        <div className="flex gap-2 mb-2 flex-wrap">
+                          <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-full">{sessions}</span>
+                          <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-full">{time}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-snug">{desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed border-t border-white/5 pt-3">
+                    Use <strong>double progression</strong>: add reps each session until you hit the top of the range across all sets, then increase weight next time. Never jump tiers solely based on XP — advance when technique is solid and sessions feel manageable.
+                  </p>
                 </div>
 
                 <div className="bg-card border border-white/5 p-6 rounded-2xl">
