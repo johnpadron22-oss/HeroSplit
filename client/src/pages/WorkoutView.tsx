@@ -374,6 +374,7 @@ export default function WorkoutView() {
     const isBlueprint = workout.series === "Blueprint Series";
 
     return (
+      <>
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center space-y-8">
         <motion.div
           initial={{ scale: 0, rotate: -180 }}
@@ -462,6 +463,7 @@ export default function WorkoutView() {
       {showLoot && (
         <LootDrop isVillain={isVillain} onClose={() => setShowLoot(false)} />
       )}
+      </>
     );
   }
 
