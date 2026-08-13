@@ -7,11 +7,12 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeft, CheckCircle, ChevronRight, Dumbbell,
   Flame, Loader2, Play, SkipForward, Timer, Trophy, Zap,
-  Info, TrendingUp, Wind,
+  Info, TrendingUp, Wind, ArrowUpRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
+import { LootDrop } from "@/components/LootDrop";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -80,6 +81,9 @@ export default function WorkoutView() {
 
   // XP
   const [xpEarned, setXpEarned] = useState(0);
+
+  // Loot drop
+  const [showLoot, setShowLoot] = useState(false);
 
   // ── Timers ──────────────────────────────────────────────────────────────────
 
@@ -214,6 +218,9 @@ export default function WorkoutView() {
       origin: { y: 0.6 },
       colors: isVillain ? ["#a855f7", "#7e22ce", "#ec4899"] : ["#22d3ee", "#0891b2", "#facc15"],
     });
+
+    // Show loot drop after short delay
+    setTimeout(() => setShowLoot(true), 1200);
 
     // Build setsData: map exercise index → exercise name + completed sets
     const setsData = exercises
@@ -359,6 +366,13 @@ export default function WorkoutView() {
   // ── Done ────────────────────────────────────────────────────────────────────
   if (phase === "done") {
     const totalSetsCompleted = Object.values(completedSets).reduce((s, sets) => s + sets.length, 0);
+
+    // Progression nudge: show for beginner/intermediate series workouts
+    const isBeginner = workout.difficulty === "Beginner";
+    const isIntermediate = workout.difficulty === "Intermediate";
+    const isFoundation = workout.series === "Foundation Series";
+    const isBlueprint = workout.series === "Blueprint Series";
+
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center space-y-8">
         <motion.div
@@ -418,6 +432,24 @@ export default function WorkoutView() {
             </div>
           )}
 
+          {/* Tier upgrade nudge */}
+          {isFoundation && (
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 text-left">
+              <ArrowUpRight className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-cyan-300/80 leading-snug">
+                Completing Foundation workouts consistently? When they feel manageable with solid form, check out the <strong>Blueprint Series</strong> — it's your next level.
+              </p>
+            </div>
+          )}
+          {isBlueprint && (
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/20 text-left">
+              <ArrowUpRight className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-purple-300/80 leading-snug">
+                Blueprint feeling smooth? The <strong>Nemesis Series</strong> (Pro) runs Push/Pull/Legs for maximum specialization. Upgrade when you're ready to level up.
+              </p>
+            </div>
+          )}
+
           <Link href="/" className="block">
             <Button size="lg" className={cn("w-full h-12 font-bold", btnClass)}>
               Back to HeroSplit
@@ -425,6 +457,11 @@ export default function WorkoutView() {
           </Link>
         </motion.div>
       </div>
+
+      {/* Loot drop overlay */}
+      {showLoot && (
+        <LootDrop isVillain={isVillain} onClose={() => setShowLoot(false)} />
+      )}
     );
   }
 

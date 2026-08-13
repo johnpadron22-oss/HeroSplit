@@ -216,21 +216,24 @@ export function useUpgradePro() {
   const [isPending, setIsPending] = useState(false);
   const { toast } = useToast();
 
-  const upgrade = async () => {
+  const upgrade = async (plan: "monthly" | "annual" = "monthly") => {
     if (!user) return;
     setIsPending(true);
     try {
       const res = await fetch("/api/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, email: user.email }),
+        body: JSON.stringify({ userId: user.id, email: user.email, plan }),
       });
-      const { url } = await res.json();
-      window.location.href = url;
-    } catch {
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error ?? "Checkout failed");
+      }
+      window.location.href = json.url;
+    } catch (e: any) {
       toast({
-        title: "Error",
-        description: "Could not start checkout. Please try again.",
+        title: "Payment Error",
+        description: e.message ?? "Could not start checkout. Please try again.",
         variant: "destructive",
       });
     } finally {
