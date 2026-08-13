@@ -39,6 +39,9 @@ export interface UserProfile {
   longestStreak: number;
   totalWorkouts: number;
   stripeCustomerId?: string;
+  path?: "hero" | "villain";
+  archetype?: string;
+  alias?: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

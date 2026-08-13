@@ -4,6 +4,7 @@ import { useWorkouts, useUserProgress } from "@/hooks/use-workouts";
 import { useAuth } from "@/hooks/use-auth";
 import { WorkoutCard } from "@/components/WorkoutCard";
 import { PaywallDialog } from "@/components/PaywallDialog";
+import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
 import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,12 @@ export default function Home() {
     ? user.email.split("@")[0].replace(/[._-]/g, " ").split(" ")[0]
     : "Hero";
   const avatarInitial = displayName[0]?.toUpperCase() ?? "H";
+
+  // Show onboarding if profile exists but no archetype chosen yet
+  const needsOnboarding =
+    !loadingProgress &&
+    progress?.profile &&
+    !progress.profile.archetype;
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-8">
@@ -316,6 +323,13 @@ export default function Home() {
       </main>
 
       <PaywallDialog open={showPaywall} onOpenChange={setShowPaywall} />
+
+      {needsOnboarding && progress?.profile && (
+        <OnboardingModal
+          profile={progress.profile}
+          defaultAlias={displayName}
+        />
+      )}
     </div>
   );
 }

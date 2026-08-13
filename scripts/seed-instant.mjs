@@ -1,26 +1,27 @@
 /**
  * One-time seed script — writes all workout programs to InstantDB.
- * Run once: node scripts/seed-instant.mjs
- *
- * Requires: INSTANT_APP_ID and INSTANT_ADMIN_TOKEN env vars
- * (or edit the constants below directly)
+ * Run: node scripts/seed-instant.mjs
  */
 
 import { init, id, tx } from "@instantdb/admin";
 
 const APP_ID = process.env.INSTANT_APP_ID ?? "2bcb316f-1e7d-4ade-9821-9422d2b885ea";
-const ADMIN_TOKEN = process.env.INSTANT_ADMIN_TOKEN ?? "db9d1446-2f4b-451a-8887-5dcb41839d7a";
+const ADMIN_TOKEN = process.env.INSTANT_ADMIN_TOKEN;
+
+if (!ADMIN_TOKEN) {
+  console.error("Error: INSTANT_ADMIN_TOKEN env var is required.");
+  console.error("Run: INSTANT_ADMIN_TOKEN=your_token node scripts/seed-instant.mjs");
+  process.exit(1);
+}
 
 const db = init({ appId: APP_ID, adminToken: ADMIN_TOKEN });
 
-// ── Workout Data ──────────────────────────────────────────────────────────────
-
 const workouts = [
-  // ── Hero / Free ──────────────────────────────────────────────────────────
+  // ── HERO / FREE ─────────────────────────────────────────────────────────────
   {
     slug: "one-punch",
     name: "The One Punch",
-    description: "100 Pushups, 100 Situps, 100 Squats, and a 10km Run.",
+    description: "100 Pushups, 100 Situps, 100 Squats, 10km Run. Every single day. No excuses.",
     type: "hero",
     difficulty: "Elite Level",
     avatarEmoji: "✨",
@@ -32,14 +33,14 @@ const workouts = [
         { name: "Pushups", reps: "100" },
         { name: "Situps", reps: "100" },
         { name: "Squats", reps: "100" },
-        { name: "Run", reps: "10km" },
+        { name: "10km Run", reps: "1" },
       ],
     },
   },
   {
     slug: "wall-crawler-acrobat",
-    name: "Wall-Crawler Acrobat (Inspired)",
-    description: "A legendary workout program inspired by the character's unique abilities.",
+    name: "Wall-Crawler Acrobat",
+    description: "Upper body pulling power and body control inspired by a hero who swings between skyscrapers.",
     type: "hero",
     difficulty: "Advanced",
     avatarEmoji: "🕷️",
@@ -48,8 +49,8 @@ const workouts = [
     imageUrl: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&q=80&w=1000",
     program: {
       exercises: [
-        { name: "Scap Pull-Aparts", sets: "2", reps: "15" },
-        { name: "Quadrupedal Crawl", sets: "2", reps: "30s" },
+        { name: "Scap Pull-Aparts", sets: "2", reps: "15", rest: "45s" },
+        { name: "Quadrupedal Crawl", sets: "2", reps: "30s", rest: "45s" },
         { name: "Weighted Chin-Up", sets: "4", reps: "6–8", rest: "120s" },
         { name: "Climb-Up Practice", sets: "4", reps: "3–5", rest: "120s" },
         { name: "Front Lever Progression", sets: "3", reps: "5–8s hold", rest: "90s" },
@@ -59,8 +60,8 @@ const workouts = [
   },
   {
     slug: "speedforce-sprinter",
-    name: "Speedforce Sprinter (Inspired)",
-    description: "A legendary workout program inspired by the character's unique abilities.",
+    name: "Speedforce Sprinter",
+    description: "Lower body explosive power and acceleration for the hero who moves faster than lightning.",
     type: "hero",
     difficulty: "Elite Level",
     avatarEmoji: "⚡",
@@ -73,13 +74,14 @@ const workouts = [
         { name: "Bulgarian Split Squat", sets: "4", reps: "6–8/leg", rest: "120s" },
         { name: "Calf Raise", sets: "4", reps: "12–15", rest: "60s" },
         { name: "Nordic Curl", sets: "3", reps: "5–8", rest: "90s" },
+        { name: "Sprint Interval", sets: "6", reps: "60m", rest: "90s" },
       ],
     },
   },
   {
     slug: "thunder-god",
-    name: "Thunder God (Inspired)",
-    description: "A legendary workout program inspired by the character's unique abilities.",
+    name: "Thunder God Press",
+    description: "Overhead strength to match the might of a god. Built for those who lift like they command the storm.",
     type: "hero",
     difficulty: "Advanced",
     avatarEmoji: "🔨",
@@ -92,15 +94,57 @@ const workouts = [
         { name: "Push Press", sets: "4", reps: "5–6", rest: "120s" },
         { name: "Dumbbell Overhead Press", sets: "3", reps: "8–10", rest: "90s" },
         { name: "Landmine Press", sets: "3", reps: "10–12", rest: "75s" },
+        { name: "Face Pull", sets: "3", reps: "15", rest: "60s" },
+      ],
+    },
+  },
+  {
+    slug: "armored-genius",
+    name: "Armored Genius Protocol",
+    description: "Iron will meets iron weights. The full-body conditioning of a billionaire genius inside his armored suit.",
+    type: "hero",
+    difficulty: "Intermediate",
+    avatarEmoji: "🤖",
+    equipment: "Full Gym",
+    isPro: false,
+    imageUrl: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&q=80&w=1000",
+    program: {
+      exercises: [
+        { name: "Barbell Bench Press", sets: "4", reps: "6–8", rest: "120s" },
+        { name: "Incline Dumbbell Press", sets: "3", reps: "10–12", rest: "90s" },
+        { name: "Cable Row", sets: "4", reps: "10", rest: "90s" },
+        { name: "Lat Pulldown", sets: "3", reps: "10–12", rest: "75s" },
+        { name: "Tricep Pushdown", sets: "3", reps: "12–15", rest: "60s" },
+        { name: "Plank", sets: "3", reps: "45s hold", rest: "45s" },
+      ],
+    },
+  },
+  {
+    slug: "super-soldier",
+    name: "Super Soldier Program",
+    description: "Military-grade conditioning from the soldier who never stopped. Full-body strength and endurance.",
+    type: "hero",
+    difficulty: "Advanced",
+    avatarEmoji: "🛡️",
+    equipment: "Full Gym",
+    isPro: false,
+    imageUrl: "https://images.unsplash.com/photo-1517438476312-10d79c077509?auto=format&fit=crop&q=80&w=1000",
+    program: {
+      exercises: [
+        { name: "Back Squat", sets: "5", reps: "5", rest: "150s" },
+        { name: "Pull-Up", sets: "5", reps: "10", rest: "90s" },
+        { name: "Push-Up", sets: "5", reps: "20", rest: "60s" },
+        { name: "Farmers Walk", sets: "3", reps: "50m", rest: "90s" },
+        { name: "5km Run", reps: "1" },
       ],
     },
   },
 
-  // ── Villain / Pro ─────────────────────────────────────────────────────────
+  // ── VILLAIN / PRO ────────────────────────────────────────────────────────────
   {
     slug: "gamma-juggernaut",
-    name: "Gamma Juggernaut (Inspired)",
-    description: "A legendary workout program inspired by the character's unique abilities.",
+    name: "Gamma Juggernaut",
+    description: "Unstoppable power forged through gamma radiation. Squat and deadlift until the floor cracks.",
     type: "villain",
     difficulty: "Elite Level",
     avatarEmoji: "💪",
@@ -113,15 +157,119 @@ const workouts = [
         { name: "Conventional Deadlift", sets: "5", reps: "3–5", rest: "180s" },
         { name: "Front Squat", sets: "3", reps: "6–8", rest: "120s" },
         { name: "Good Morning", sets: "3", reps: "8–10", rest: "90s" },
+        { name: "Leg Press", sets: "4", reps: "10–12", rest: "90s" },
+      ],
+    },
+  },
+  {
+    slug: "midnight-predator",
+    name: "Midnight Predator",
+    description: "Strike from the shadows. Low-volume, high-intensity power built for speed and lethality.",
+    type: "villain",
+    difficulty: "Elite Level",
+    avatarEmoji: "🐈‍⬛",
+    equipment: "Full Gym",
+    isPro: true,
+    imageUrl: "https://images.unsplash.com/photo-1571019613914-85f342c6a11e?auto=format&fit=crop&q=80&w=1000",
+    program: {
+      exercises: [
+        { name: "Power Clean", sets: "5", reps: "3", rest: "150s" },
+        { name: "Box Jump", sets: "4", reps: "5", rest: "90s" },
+        { name: "Trap Bar Deadlift", sets: "4", reps: "5", rest: "150s" },
+        { name: "Single-Leg Broad Jump", sets: "3", reps: "5 each", rest: "90s" },
+        { name: "Sprint", sets: "6", reps: "40m", rest: "120s" },
+      ],
+    },
+  },
+  {
+    slug: "berserker-frame",
+    name: "Berserker Frame",
+    description: "Controlled rage channeled into extreme volume. Your muscles don't get to rest. Neither do you.",
+    type: "villain",
+    difficulty: "Elite Level",
+    avatarEmoji: "🔥",
+    equipment: "Full Gym",
+    isPro: true,
+    imageUrl: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&q=80&w=1000",
+    program: {
+      exercises: [
+        { name: "Barbell Row", sets: "6", reps: "8", rest: "90s" },
+        { name: "Weighted Pull-Up", sets: "5", reps: "8", rest: "90s" },
+        { name: "Chest-Supported Row", sets: "4", reps: "12", rest: "75s" },
+        { name: "Hammer Curl", sets: "4", reps: "12", rest: "60s" },
+        { name: "Dead Hang", sets: "3", reps: "30s hold", rest: "60s" },
+        { name: "Barbell Shrug", sets: "4", reps: "15", rest: "60s" },
+      ],
+    },
+  },
+  {
+    slug: "void-sorcerer",
+    name: "Void Sorcerer Conditioning",
+    description: "The body is merely a vessel. Sharpen it until mind and muscle operate as one devastating force.",
+    type: "villain",
+    difficulty: "Advanced",
+    avatarEmoji: "🌀",
+    equipment: "Bodyweight",
+    isPro: true,
+    imageUrl: "https://images.unsplash.com/photo-1544216717-3bbf52512659?auto=format&fit=crop&q=80&w=1000",
+    program: {
+      exercises: [
+        { name: "Handstand Hold", sets: "4", reps: "20s hold", rest: "60s" },
+        { name: "Dragon Flag", sets: "4", reps: "6", rest: "90s" },
+        { name: "Planche Lean", sets: "3", reps: "15s hold", rest: "90s" },
+        { name: "Hollow Body Rock", sets: "3", reps: "20", rest: "60s" },
+        { name: "L-Sit", sets: "3", reps: "15s hold", rest: "60s" },
+        { name: "Pike Push-Up", sets: "4", reps: "12", rest: "75s" },
+      ],
+    },
+  },
+  {
+    slug: "precision-assassin",
+    name: "Precision Assassin",
+    description: "A killer's body is a weapon. Light, fast, and devastatingly strong. Every movement is intentional.",
+    type: "villain",
+    difficulty: "Advanced",
+    avatarEmoji: "🗡️",
+    equipment: "Bodyweight",
+    isPro: true,
+    imageUrl: "https://images.unsplash.com/photo-1434682881908-b43d0467b798?auto=format&fit=crop&q=80&w=1000",
+    program: {
+      exercises: [
+        { name: "Pistol Squat", sets: "4", reps: "8 each", rest: "75s" },
+        { name: "Single-Arm Push-Up Progression", sets: "4", reps: "5 each", rest: "90s" },
+        { name: "Archer Pull-Up", sets: "3", reps: "5 each", rest: "90s" },
+        { name: "Shrimp Squat", sets: "3", reps: "6 each", rest: "75s" },
+        { name: "Tuck Planche", sets: "3", reps: "10s hold", rest: "90s" },
+        { name: "Agility Sprint Drill", sets: "5", reps: "20s", rest: "40s" },
+      ],
+    },
+  },
+  {
+    slug: "pure-discipline",
+    name: "Pure Discipline",
+    description: "No music. No mirrors. No excuses. The most grueling full-body program for those who embrace suffering.",
+    type: "villain",
+    difficulty: "Elite Level",
+    avatarEmoji: "⚫",
+    equipment: "Full Gym",
+    isPro: true,
+    imageUrl: "https://images.unsplash.com/photo-1584466977773-e625c37cdd50?auto=format&fit=crop&q=80&w=1000",
+    program: {
+      exercises: [
+        { name: "Deadlift", sets: "5", reps: "5", rest: "180s" },
+        { name: "Overhead Press", sets: "5", reps: "5", rest: "150s" },
+        { name: "Barbell Row", sets: "5", reps: "5", rest: "150s" },
+        { name: "Back Squat", sets: "5", reps: "5", rest: "180s" },
+        { name: "Bench Press", sets: "5", reps: "5", rest: "150s" },
       ],
     },
   },
 
-  // ── Anime / Pro ───────────────────────────────────────────────────────────
+  // ── ANIME / PRO ──────────────────────────────────────────────────────────────
   {
     slug: "saiyan-warrior",
     name: "Kakarot's Path",
-    description: "Pure explosive power forged through relentless Saiyan battle training. Compound lifts taken to the absolute limit.",
+    description: "Pure explosive power forged through relentless Saiyan battle training.",
     type: "anime",
     difficulty: "Elite Level",
     avatarEmoji: "🐉",
@@ -187,7 +335,7 @@ const workouts = [
   {
     slug: "shadow-clone-circuit",
     name: "Shadow Clone Circuit",
-    description: "Volume so extreme it feels like a hundred of you trained at once. Elite shinobi calisthenics mastery.",
+    description: "Volume so extreme it feels like a hundred of you trained at once.",
     type: "anime",
     difficulty: "Advanced",
     avatarEmoji: "⚡",
@@ -209,7 +357,7 @@ const workouts = [
   {
     slug: "infinite-void",
     name: "Infinite Void",
-    description: "Limitless technique demands limitless body control. Precision mobility and unshakeable balance training.",
+    description: "Limitless technique demands limitless body control. Precision mobility and unshakeable balance.",
     type: "anime",
     difficulty: "Advanced",
     avatarEmoji: "🌀",
@@ -231,7 +379,7 @@ const workouts = [
   {
     slug: "black-flash-protocol",
     name: "Black Flash Protocol",
-    description: "Superhuman brawling power activated. Pure physical domination built through brutal compound pulling and pressing.",
+    description: "Superhuman brawling power. Pure physical domination through brutal compound pulling and pressing.",
     type: "anime",
     difficulty: "Elite Level",
     avatarEmoji: "💥",
@@ -253,7 +401,7 @@ const workouts = [
   {
     slug: "three-sword-conditioning",
     name: "Three Sword Conditioning",
-    description: "Wielding three blades demands supreme shoulder, back, and grip strength. Upper body forged to legendary status.",
+    description: "Supreme shoulder, back, and grip strength for a warrior who wields three blades.",
     type: "anime",
     difficulty: "Advanced",
     avatarEmoji: "⚔️",
@@ -275,7 +423,7 @@ const workouts = [
   {
     slug: "gear-fourth-pump",
     name: "Gear Fourth Pump",
-    description: "Rubber-body power — elastic, dynamic, and unstoppable. Full-body explosive plyometric domination.",
+    description: "Elastic, dynamic, and unstoppable. Full-body explosive plyometric domination.",
     type: "anime",
     difficulty: "Intermediate",
     avatarEmoji: "🌊",
@@ -297,7 +445,7 @@ const workouts = [
   {
     slug: "survey-corps-circuit",
     name: "Survey Corps Circuit",
-    description: "Humanity's strongest trains core and agility above all else. 3D maneuver gear demands a body that never quits.",
+    description: "Humanity's strongest trains core and agility above all else. A body that never quits.",
     type: "anime",
     difficulty: "Elite Level",
     avatarEmoji: "🗡️",
@@ -340,27 +488,35 @@ const workouts = [
   },
 ];
 
-// ── Seed ──────────────────────────────────────────────────────────────────────
-
 async function seed() {
-  console.log(`Seeding ${workouts.length} workouts into InstantDB...`);
+  console.log(`\n🦸 HeroSplit Workout Seeder`);
+  console.log(`Seeding ${workouts.length} workouts into InstantDB...\n`);
 
-  // Check for existing workouts to avoid duplicates
-  const { data } = await db.query({ workouts: {} });
-  const existingSlugs = new Set((data?.workouts ?? []).map((w) => w.slug));
+  const result = await db.query({ workouts: {} });
+  const existing = result.workouts ?? [];
+  const existingSlugs = new Set(existing.map((w) => w.slug));
 
   let created = 0;
+  let skipped = 0;
+
   for (const workout of workouts) {
     if (existingSlugs.has(workout.slug)) {
-      console.log(`  skip  ${workout.slug} (already exists)`);
+      console.log(`  ⏭  skip   ${workout.name}`);
+      skipped++;
       continue;
     }
     await db.transact([tx.workouts[id()].update(workout)]);
-    console.log(`  added ${workout.slug}`);
+    console.log(`  ✅ added  ${workout.name}`);
     created++;
   }
 
-  console.log(`\nDone. ${created} workouts created, ${workouts.length - created} skipped.`);
+  const heroCount = workouts.filter(w => !w.isPro && w.type === "hero").length;
+  const villainCount = workouts.filter(w => w.type === "villain").length;
+  const animeCount = workouts.filter(w => w.type === "anime").length;
+
+  console.log(`\n✨ Done!`);
+  console.log(`   ${created} created, ${skipped} skipped`);
+  console.log(`   ${heroCount} hero (free) | ${villainCount} villain (pro) | ${animeCount} anime (pro)`);
 }
 
 seed().catch((err) => {

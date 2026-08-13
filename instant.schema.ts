@@ -36,6 +36,10 @@ const _schema = i.schema({
       longestStreak: i.number(),
       totalWorkouts: i.number(),
       stripeCustomerId: i.string().optional(),
+      // Onboarding / RPG identity
+      path: i.string().optional(),       // "hero" | "villain"
+      archetype: i.string().optional(),  // e.g. "dark-vigilante"
+      alias: i.string().optional(),      // user's chosen name
     }),
   },
 });
