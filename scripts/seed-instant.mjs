@@ -17,6 +17,65 @@ if (!ADMIN_TOKEN) {
 const db = init({ appId: APP_ID, adminToken: ADMIN_TOKEN });
 
 const workouts = [
+  // ── BEGINNER / FREE ─────────────────────────────────────────────────────────
+  {
+    slug: "first-steps",
+    name: "First Steps",
+    description: "Your very first workout. Simple movements, zero equipment. Build the habit before the muscle.",
+    type: "hero",
+    difficulty: "Beginner",
+    avatarEmoji: "🌱",
+    equipment: "Bodyweight",
+    isPro: false,
+    program: {
+      exercises: [
+        { name: "Wall Push-Up", sets: "3", reps: "10", rest: "60s" },
+        { name: "Bodyweight Squat", sets: "3", reps: "10", rest: "60s" },
+        { name: "Plank Hold", sets: "3", reps: "20s hold", rest: "60s" },
+        { name: "Glute Bridge", sets: "3", reps: "12", rest: "60s" },
+        { name: "10 min Walk", reps: "1" },
+      ],
+    },
+  },
+  {
+    slug: "zero-to-hero",
+    name: "Zero to Hero",
+    description: "No gym needed. Build a foundation of strength and movement from absolute zero.",
+    type: "hero",
+    difficulty: "Beginner",
+    avatarEmoji: "⭐",
+    equipment: "Bodyweight",
+    isPro: false,
+    program: {
+      exercises: [
+        { name: "Knee Push-Up", sets: "3", reps: "8–12", rest: "60s" },
+        { name: "Assisted Squat", sets: "3", reps: "10", rest: "60s" },
+        { name: "Dead Bug", sets: "3", reps: "6 each side", rest: "60s" },
+        { name: "Superman Hold", sets: "3", reps: "10s hold", rest: "45s" },
+        { name: "Jumping Jack", sets: "2", reps: "20", rest: "30s" },
+      ],
+    },
+  },
+  {
+    slug: "rookie-gains",
+    name: "Rookie Gains",
+    description: "First time touching a dumbbell? This is where you start. Simple, safe, effective.",
+    type: "hero",
+    difficulty: "Beginner",
+    avatarEmoji: "🏋️",
+    equipment: "Dumbbells",
+    isPro: false,
+    program: {
+      exercises: [
+        { name: "Dumbbell Goblet Squat", sets: "3", reps: "10", rest: "90s" },
+        { name: "Dumbbell Chest Press (floor)", sets: "3", reps: "10", rest: "90s" },
+        { name: "Dumbbell Romanian Deadlift", sets: "3", reps: "10", rest: "90s" },
+        { name: "Dumbbell Bent-Over Row", sets: "3", reps: "10 each", rest: "90s" },
+        { name: "Dumbbell Shoulder Press", sets: "3", reps: "10", rest: "90s" },
+      ],
+    },
+  },
+
   // ── HERO / FREE ─────────────────────────────────────────────────────────────
   {
     slug: "one-punch",

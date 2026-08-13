@@ -137,7 +137,7 @@ export default function Home() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {heroWorkouts.map((workout) => (
-                  <WorkoutCard key={workout.id} workout={workout} />
+                  <WorkoutCard key={workout.id} workout={workout} experienceLevel={progress?.profile?.experienceLevel} />
                 ))}
                 {heroWorkouts.length === 0 && (
                   <div className="col-span-full text-center py-12 text-muted-foreground">
@@ -186,6 +186,7 @@ export default function Home() {
                     workout={workout}
                     isLocked={!isPro}
                     onUnlock={() => setShowPaywall(true)}
+                    experienceLevel={progress?.profile?.experienceLevel}
                   />
                 ))}
                 {animeWorkouts.length === 0 && (
@@ -235,6 +236,7 @@ export default function Home() {
                     workout={workout}
                     isLocked={!isPro}
                     onUnlock={() => setShowPaywall(true)}
+                    experienceLevel={progress?.profile?.experienceLevel}
                   />
                 ))}
               </div>

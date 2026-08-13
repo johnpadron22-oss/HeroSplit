@@ -42,6 +42,7 @@ export interface UserProfile {
   path?: "hero" | "villain";
   archetype?: string;
   alias?: string;
+  experienceLevel?: "beginner" | "intermediate" | "advanced" | "veteran";
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

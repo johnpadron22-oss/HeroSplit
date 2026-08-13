@@ -136,6 +136,43 @@ const VILLAIN_ARCHETYPES = [
   },
 ];
 
+// ── Experience Levels ─────────────────────────────────────────────────────────
+
+const EXPERIENCE_LEVELS = [
+  {
+    id: "beginner" as const,
+    emoji: "🌱",
+    label: "New to this",
+    description: "Just starting out. Never really trained before or returning after a long break.",
+    badge: "Beginner",
+    badgeColor: "border-green-500/30 text-green-400 bg-green-500/10",
+  },
+  {
+    id: "intermediate" as const,
+    emoji: "💪",
+    label: "Getting started",
+    description: "Some gym experience. Comfortable with basic movements like squats and push-ups.",
+    badge: "Intermediate",
+    badgeColor: "border-cyan-500/30 text-cyan-400 bg-cyan-500/10",
+  },
+  {
+    id: "advanced" as const,
+    emoji: "🔥",
+    label: "Consistent lifter",
+    description: "Training regularly for 1+ years. Know most exercises and how to program.",
+    badge: "Advanced",
+    badgeColor: "border-orange-500/30 text-orange-400 bg-orange-500/10",
+  },
+  {
+    id: "veteran" as const,
+    emoji: "⚡",
+    label: "Veteran",
+    description: "3+ years of serious training. Comfortable with complex lifts and high volume.",
+    badge: "Veteran",
+    badgeColor: "border-purple-500/30 text-purple-400 bg-purple-500/10",
+  },
+];
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface OnboardingModalProps {
@@ -143,11 +180,12 @@ interface OnboardingModalProps {
   defaultAlias: string;
 }
 
-type Step = "path" | "archetype" | "alias" | "reveal";
+type Step = "path" | "experience" | "archetype" | "alias" | "reveal";
 
 export function OnboardingModal({ profile, defaultAlias }: OnboardingModalProps) {
   const [step, setStep] = useState<Step>("path");
   const [path, setPath] = useState<"hero" | "villain" | null>(null);
+  const [experienceLevel, setExperienceLevel] = useState<"beginner" | "intermediate" | "advanced" | "veteran" | null>(null);
   const [archetypeIndex, setArchetypeIndex] = useState(0);
   const [alias, setAlias] = useState(defaultAlias);
   const [saving, setSaving] = useState(false);
@@ -157,6 +195,11 @@ export function OnboardingModal({ profile, defaultAlias }: OnboardingModalProps)
 
   const handlePathSelect = (p: "hero" | "villain") => {
     setPath(p);
+    setStep("experience");
+  };
+
+  const handleExperienceSelect = (level: typeof EXPERIENCE_LEVELS[0]["id"]) => {
+    setExperienceLevel(level);
     setArchetypeIndex(0);
     setStep("archetype");
   };
@@ -171,6 +214,7 @@ export function OnboardingModal({ profile, defaultAlias }: OnboardingModalProps)
         path,
         archetype: chosen.id,
         alias: alias.trim(),
+        ...(experienceLevel ? { experienceLevel } : {}),
       }),
     ]);
     setSaving(false);
@@ -240,7 +284,57 @@ export function OnboardingModal({ profile, defaultAlias }: OnboardingModalProps)
             </motion.div>
           )}
 
-          {/* ── STEP 2: ARCHETYPE ──────────────────────────────────────────── */}
+          {/* ── STEP 2: EXPERIENCE ─────────────────────────────────────────── */}
+          {step === "experience" && (
+            <motion.div
+              key="experience"
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              className="p-8 space-y-5"
+            >
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setStep("path")}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h2 className="text-xl font-display font-black">Your Experience Level</h2>
+                  <p className="text-xs text-muted-foreground">
+                    We'll tailor workout recommendations to match you.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {EXPERIENCE_LEVELS.map((level) => (
+                  <button
+                    key={level.id}
+                    onClick={() => handleExperienceSelect(level.id)}
+                    className="w-full text-left flex items-center gap-4 p-4 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20 transition-all group"
+                  >
+                    <span className="text-3xl">{level.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-bold text-sm">{level.label}</span>
+                        <span className={cn("text-[10px] font-mono px-2 py-0.5 rounded-full border", level.badgeColor)}>
+                          {level.badge}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-snug">
+                        {level.description}
+                      </p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── STEP 3: ARCHETYPE ──────────────────────────────────────────── */}
           {step === "archetype" && chosen && (
             <motion.div
               key="archetype"
@@ -251,7 +345,7 @@ export function OnboardingModal({ profile, defaultAlias }: OnboardingModalProps)
             >
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setStep("path")}
+                  onClick={() => setStep("experience")}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <ChevronLeft className="w-5 h-5" />

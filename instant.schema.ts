@@ -37,9 +37,10 @@ const _schema = i.schema({
       totalWorkouts: i.number(),
       stripeCustomerId: i.string().optional(),
       // Onboarding / RPG identity
-      path: i.string().optional(),       // "hero" | "villain"
-      archetype: i.string().optional(),  // e.g. "dark-vigilante"
-      alias: i.string().optional(),      // user's chosen name
+      path: i.string().optional(),             // "hero" | "villain"
+      archetype: i.string().optional(),        // e.g. "dark-vigilante"
+      alias: i.string().optional(),            // user's chosen name
+      experienceLevel: i.string().optional(),  // "beginner" | "intermediate" | "advanced" | "veteran"
     }),
   },
 });
