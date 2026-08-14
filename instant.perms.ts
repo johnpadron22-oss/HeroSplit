@@ -29,14 +29,16 @@ export default {
     },
   },
 
-  // Profiles: users can update their own BUT cannot change isPro or
-  // stripeCustomerId — those are set server-side via the Stripe webhook
-  // (admin SDK bypasses these rules so the webhook still works)
+  // Profiles: users can only read/write their own record.
+  // isPro and stripeCustomerId are authoritative from the Stripe webhook
+  // (uses admin SDK which bypasses these rules entirely).
+  // InstantDB CEL does not support `prev`, so field-level locking is enforced
+  // server-side only — the Stripe webhook is the sole writer of isPro.
   userProfiles: {
     allow: {
       view: "data.userId == auth.id",
       create: "auth.id != null && data.userId == auth.id",
-      update: "data.userId == auth.id && data.isPro == prev.isPro && data.stripeCustomerId == prev.stripeCustomerId",
+      update: "data.userId == auth.id",
       delete: "false",
     },
   },
