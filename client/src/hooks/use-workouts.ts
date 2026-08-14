@@ -50,9 +50,9 @@ export interface UserProfile {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function computeStreak(logs: WorkoutLog[]): number {
-  if (!logs.length) return 0;
-  const dates = [...new Set(logs.map((l) => l.date))].sort().reverse();
+function computeStreakFromDates(rawDates: string[]): number {
+  if (!rawDates.length) return 0;
+  const dates = [...new Set(rawDates)].sort().reverse();
   const today = format(new Date(), "yyyy-MM-dd");
   const yesterday = format(new Date(Date.now() - 86400000), "yyyy-MM-dd");
   if (dates[0] !== today && dates[0] !== yesterday) return 0;
@@ -69,6 +69,10 @@ function computeStreak(logs: WorkoutLog[]): number {
     }
   }
   return streak;
+}
+
+function computeStreak(logs: WorkoutLog[]): number {
+  return computeStreakFromDates(logs.map((l) => l.date));
 }
 
 // ── Workouts ─────────────────────────────────────────────────────────────────
@@ -106,11 +110,17 @@ export function useCreateLog() {
   const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
 
-  // Also query the user's profile so we can update totalXP
+  // Query profile + existing logs so we can update XP, totalWorkouts, longestStreak
   const { data: profileData } = db.useQuery(
-    user ? { userProfiles: { $: { where: { userId: user.id } } } } : null
+    user
+      ? {
+          userProfiles: { $: { where: { userId: user.id } } },
+          workoutLogs:  { $: { where: { userId: user.id } } },
+        }
+      : null
   );
-  const profile = profileData?.userProfiles?.[0] ?? null;
+  const profile      = profileData?.userProfiles?.[0] ?? null;
+  const existingLogs = (profileData?.workoutLogs ?? []) as WorkoutLog[];
 
   const mutate = async (
     data: {
@@ -140,11 +150,18 @@ export function useCreateLog() {
         }),
       ];
 
-      // Update profile: increment totalXP
-      if (profile && data.xpEarned) {
+      // Update profile: totalXP + totalWorkouts + longestStreak
+      if (profile) {
+        // Compute streak including today's new log date
+        const allDates = [...existingLogs.map((l) => l.date), data.date];
+        const newStreak = computeStreakFromDates(allDates);
+        const newLongest = Math.max(profile.longestStreak ?? 0, newStreak);
+
         transactions.push(
           db.tx.userProfiles[profile.id].update({
-            totalXP: (profile.totalXP ?? 0) + data.xpEarned,
+            totalXP:       (profile.totalXP      ?? 0) + (data.xpEarned ?? 0),
+            totalWorkouts: (profile.totalWorkouts ?? 0) + 1,
+            longestStreak: newLongest,
           })
         );
       }

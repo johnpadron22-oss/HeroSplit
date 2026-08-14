@@ -11,11 +11,11 @@ interface PaywallDialogProps {
 }
 
 const FEATURES = [
-  "All Villain Tier workouts",
+  "All Villain Tier workouts (6 elite programs)",
   "All Anime Arc workouts (DBZ, Naruto, JJK, One Piece…)",
   "Nemesis Series: Push / Pull / Legs + Hypertrophy",
-  "Full workout history with sets & weights",
-  "XP tracking & rank progression",
+  "Workout history with sets, reps & weight logged",
+  "XP rank progression (F → SSS)",
 ];
 
 export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
