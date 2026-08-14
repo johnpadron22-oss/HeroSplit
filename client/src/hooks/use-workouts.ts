@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { db, id } from "@/lib/db";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -211,11 +211,26 @@ export function useUserProgress() {
   }[];
   const profile = (data?.userProfiles?.[0] ?? null) as UserProfile | null;
 
+  // Live-computed streak (always accurate — resets if a day was missed)
+  const computedStreak = computeStreak(logs);
+
+  // Sync stored streak whenever it diverges from the live value.
+  // This handles the case where a user misses a day — their stored
+  // currentStreak stays non-zero until this effect fires on next load.
+  useEffect(() => {
+    if (!profile) return;
+    if (profile.currentStreak === computedStreak) return;
+    db.transact([
+      db.tx.userProfiles[profile.id].update({ currentStreak: computedStreak }),
+    ]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, computedStreak]);
+
   return {
     data: {
       stats: {
         isPro: profile?.isPro ?? false,
-        currentStreak: computeStreak(logs),
+        currentStreak: computedStreak,
         longestStreak: profile?.longestStreak ?? 0,
         totalWorkouts: logs.length,
       },
