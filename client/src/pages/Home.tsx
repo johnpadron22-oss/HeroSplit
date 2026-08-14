@@ -17,7 +17,19 @@ import { useToast } from "@/hooks/use-toast";
 export default function Home() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("browse");
+  const [recommendation, setRecommendation] = useState<string | null>(null);
   const { openPortal, isPending: portalPending } = useManageBilling();
+
+  const handleOnboardingComplete = (expLevel: "beginner" | "intermediate" | "advanced" | "veteran") => {
+    const tier =
+      expLevel === "beginner" ? "Foundation" :
+      expLevel === "intermediate" ? "Blueprint" : "Nemesis";
+    setActiveTab("browse");
+    setRecommendation(tier);
+    // Auto-dismiss recommendation banner after 8s
+    setTimeout(() => setRecommendation(null), 8000);
+  };
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const { data: heroWorkouts, isLoading: loadingHero } = useWorkouts("hero");
@@ -108,7 +120,7 @@ export default function Home() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
-        <Tabs defaultValue="browse" className="space-y-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           <TabsList className="grid w-full grid-cols-4 max-w-xl mx-auto p-1 bg-white/5 rounded-full">
             <TabsTrigger value="browse" className="rounded-full data-[state=active]:bg-hero data-[state=active]:text-black font-semibold">
               Heroes
@@ -132,6 +144,41 @@ export default function Home() {
                 Free Access
               </span>
             </div>
+
+            {/* Recommendation banner — shown briefly after onboarding */}
+            {recommendation && (
+              <div className={cn(
+                "flex items-center justify-between gap-4 p-4 rounded-2xl border animate-in fade-in slide-in-from-top-2 duration-500",
+                recommendation === "Foundation" && "bg-green-500/10 border-green-500/30",
+                recommendation === "Blueprint"  && "bg-cyan-500/10 border-cyan-500/30",
+                recommendation === "Nemesis"    && "bg-purple-500/10 border-purple-500/30",
+              )}>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">
+                    {recommendation === "Foundation" ? "🌱" : recommendation === "Blueprint" ? "⚔️" : "🔥"}
+                  </span>
+                  <div>
+                    <div className={cn(
+                      "text-sm font-bold",
+                      recommendation === "Foundation" && "text-green-400",
+                      recommendation === "Blueprint"  && "text-cyan-400",
+                      recommendation === "Nemesis"    && "text-purple-400",
+                    )}>
+                      Start with the {recommendation} Series
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Recommended based on your experience level
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setRecommendation(null)}
+                  className="text-muted-foreground hover:text-foreground text-lg leading-none shrink-0"
+                >
+                  ×
+                </button>
+              </div>
+            )}
 
             {loadingHero ? (
               <div className="flex justify-center py-20">
@@ -251,6 +298,47 @@ export default function Home() {
             {loadingProgress ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (progress?.logs ?? []).length === 0 ? (
+              /* ── Empty state ── */
+              <div className="flex flex-col items-center justify-center py-20 text-center space-y-5 max-w-sm mx-auto">
+                <div className="text-6xl">⚔️</div>
+                <div>
+                  <h3 className="text-xl font-display font-black mb-2">No sessions yet</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Complete your first workout to start earning XP, building your streak, and seeing your history here.
+                  </p>
+                </div>
+                {progress?.profile && (
+                  <div className="w-full p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-left">
+                    <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-2">Your starting tier</div>
+                    {(() => {
+                      const lvl = progress.profile.experienceLevel ?? "beginner";
+                      const map: Record<string, { tier: string; color: string; emoji: string; desc: string }> = {
+                        beginner:     { tier: "Foundation", color: "text-green-400",  emoji: "🌱", desc: "Full body, 3× per week" },
+                        intermediate: { tier: "Blueprint",  color: "text-cyan-400",   emoji: "⚔️", desc: "Upper/Lower, 4× per week" },
+                        advanced:     { tier: "Nemesis",    color: "text-purple-400", emoji: "🔥", desc: "PPL + Hypertrophy, 5–6× per week" },
+                        veteran:      { tier: "Nemesis",    color: "text-purple-400", emoji: "⚡", desc: "PPL + Hypertrophy, 5–6× per week" },
+                      };
+                      const rec = map[lvl];
+                      return (
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{rec.emoji}</span>
+                          <div>
+                            <div className={cn("font-display font-black text-sm", rec.color)}>{rec.tier} Series</div>
+                            <div className="text-xs text-muted-foreground">{rec.desc}</div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+                <Button
+                  className="w-full h-11 rounded-full font-bold bg-white text-black hover:bg-gray-100"
+                  onClick={() => setActiveTab("browse")}
+                >
+                  Browse Workouts →
+                </Button>
               </div>
             ) : (
               <>
@@ -474,6 +562,7 @@ export default function Home() {
         <OnboardingModal
           profile={progress.profile}
           defaultAlias={displayName}
+          onComplete={handleOnboardingComplete}
         />
       )}
     </div>

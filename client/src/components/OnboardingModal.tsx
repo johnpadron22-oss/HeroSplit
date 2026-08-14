@@ -178,11 +178,19 @@ const EXPERIENCE_LEVELS = [
 interface OnboardingModalProps {
   profile: UserProfile;
   defaultAlias: string;
+  onComplete: (experienceLevel: "beginner" | "intermediate" | "advanced" | "veteran") => void;
 }
 
 type Step = "path" | "experience" | "archetype" | "alias" | "reveal";
 
-export function OnboardingModal({ profile, defaultAlias }: OnboardingModalProps) {
+const TIER_RECOMMENDATION: Record<string, { tier: string; label: string; color: string; emoji: string }> = {
+  beginner:     { tier: "Foundation", label: "Built for newcomers — machines, full body 3×/week", color: "text-green-400", emoji: "🌱" },
+  intermediate: { tier: "Blueprint",  label: "Upper/Lower split, free weights introduced 4×/week", color: "text-cyan-400",  emoji: "⚔️" },
+  advanced:     { tier: "Nemesis",    label: "Push/Pull/Legs + hypertrophy 5–6×/week (Pro)",      color: "text-purple-400", emoji: "🔥" },
+  veteran:      { tier: "Nemesis",    label: "Push/Pull/Legs + hypertrophy 5–6×/week (Pro)",      color: "text-purple-400", emoji: "⚡" },
+};
+
+export function OnboardingModal({ profile, defaultAlias, onComplete }: OnboardingModalProps) {
   const [step, setStep] = useState<Step>("path");
   const [path, setPath] = useState<"hero" | "villain" | null>(null);
   const [experienceLevel, setExperienceLevel] = useState<"beginner" | "intermediate" | "advanced" | "veteran" | null>(null);
@@ -497,70 +505,86 @@ export function OnboardingModal({ profile, defaultAlias }: OnboardingModalProps)
           )}
 
           {/* ── STEP 4: REVEAL ─────────────────────────────────────────────── */}
-          {step === "reveal" && chosen && (
-            <motion.div
-              key="reveal"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", bounce: 0.4 }}
-              className="p-8 space-y-6 text-center"
-            >
+          {step === "reveal" && chosen && (() => {
+            const rec = TIER_RECOMMENDATION[experienceLevel ?? "beginner"];
+            return (
               <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-sm font-mono text-muted-foreground uppercase tracking-widest"
+                key="reveal"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring", bounce: 0.4 }}
+                className="p-8 space-y-5 text-center"
               >
-                Identity Confirmed
-              </motion.div>
-
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.3, type: "spring", bounce: 0.5 }}
-                className={cn(
-                  "mx-auto w-32 h-32 rounded-3xl border-2 flex items-center justify-center text-7xl bg-gradient-to-b",
-                  chosen.color,
-                  chosen.border
-                )}
-              >
-                {chosen.emoji}
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="space-y-1"
-              >
-                <div className="text-2xl font-display font-black">{alias}</div>
-                <div className={cn("font-semibold text-sm", chosen.accent)}>
-                  {chosen.name}
-                </div>
-                <div className="text-xs text-muted-foreground italic">
-                  "{chosen.tagline}"
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
-              >
-                <Button
-                  className="w-full font-bold h-12 gap-2"
-                  onClick={() => {
-                    // Modal will close because profile now has archetype set
-                    // Just force a page reload to pick up the new state
-                    window.location.reload();
-                  }}
+                <motion.div
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-sm font-mono text-muted-foreground uppercase tracking-widest"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  Enter HeroSplit
-                </Button>
+                  Identity Confirmed
+                </motion.div>
+
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: "spring", bounce: 0.5 }}
+                  className={cn(
+                    "mx-auto w-28 h-28 rounded-3xl border-2 flex items-center justify-center text-6xl bg-gradient-to-b",
+                    chosen.color,
+                    chosen.border
+                  )}
+                >
+                  {chosen.emoji}
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="space-y-1"
+                >
+                  <div className="text-2xl font-display font-black">{alias}</div>
+                  <div className={cn("font-semibold text-sm", chosen.accent)}>{chosen.name}</div>
+                  <div className="text-xs text-muted-foreground italic">"{chosen.tagline}"</div>
+                </motion.div>
+
+                {/* Recommended tier */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.65 }}
+                  className="mx-4 p-3.5 rounded-xl bg-white/[0.03] border border-white/10 text-left"
+                >
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+                    Recommended Starting Point
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{rec.emoji}</span>
+                    <div>
+                      <div className={cn("font-display font-black text-sm", rec.color)}>
+                        {rec.tier} Series
+                      </div>
+                      <div className="text-xs text-muted-foreground leading-snug">{rec.label}</div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <Button
+                    className="w-full font-bold h-12 gap-2"
+                    onClick={() => onComplete(experienceLevel ?? "beginner")}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Enter HeroSplit
+                  </Button>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
+            );
+          })()}
 
         </AnimatePresence>
       </DialogContent>
