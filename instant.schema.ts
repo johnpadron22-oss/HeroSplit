@@ -31,6 +31,16 @@ const _schema = i.schema({
       achievementId: i.string(),
       unlockedAt: i.number(),
     }),
+    feedback: i.entity({
+      userId: i.string().indexed(),
+      category: i.string(),       // "general" | "character" | "fitness" | "bug"
+      message: i.string(),
+      submittedAt: i.number(),    // epoch ms
+      // Snapshot of user context at submission time
+      path: i.string().optional(),
+      archetype: i.string().optional(),
+      experienceLevel: i.string().optional(),
+    }),
     userProfiles: i.entity({
       userId: i.string().unique().indexed(),
       isPro: i.boolean(),

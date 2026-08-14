@@ -4,10 +4,11 @@ import { useWorkouts, useUserProgress, useManageBilling } from "@/hooks/use-work
 import { useAuth } from "@/hooks/use-auth";
 import { WorkoutCard } from "@/components/WorkoutCard";
 import { PaywallDialog } from "@/components/PaywallDialog";
+import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
-import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink } from "lucide-react";
+import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("browse");
   const [recommendation, setRecommendation] = useState<string | null>(null);
@@ -89,7 +91,18 @@ export default function Home() {
             <span className="text-foreground">SPLIT</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Feedback — always visible */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setShowFeedback(true)}
+              title="Share feedback"
+            >
+              <MessageSquarePlus className="w-5 h-5" />
+            </Button>
+
             <Button
               variant="ghost"
               size="icon"
@@ -500,6 +513,25 @@ export default function Home() {
                   </div>
                 )}
 
+                {/* Feedback card */}
+                <div className="bg-gradient-to-r from-purple-950/40 to-cyan-950/40 border border-white/10 p-5 rounded-2xl flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">💬</div>
+                    <div>
+                      <div className="font-semibold text-sm">Shape what's next</div>
+                      <div className="text-xs text-muted-foreground">Request characters, share your journey, report bugs</div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 border-white/20 hover:bg-white/10"
+                    onClick={() => setShowFeedback(true)}
+                  >
+                    Give Feedback
+                  </Button>
+                </div>
+
                 {/* Training system guide */}
                 <div className="bg-card border border-white/5 p-6 rounded-2xl space-y-4">
                   <div className="flex items-center gap-2">
@@ -557,6 +589,7 @@ export default function Home() {
       </main>
 
       <PaywallDialog open={showPaywall} onOpenChange={setShowPaywall} />
+      <FeedbackDialog open={showFeedback} onOpenChange={setShowFeedback} profile={progress?.profile} />
 
       {needsOnboarding && progress?.profile && (
         <OnboardingModal

@@ -29,6 +29,16 @@ export default {
     },
   },
 
+  // Feedback: users can submit and view their own, never edit or delete
+  feedback: {
+    allow: {
+      view: "data.userId == auth.id",
+      create: "auth.id != null && data.userId == auth.id",
+      update: "false",
+      delete: "false",
+    },
+  },
+
   // Profiles: users can only read/write their own record.
   // isPro and stripeCustomerId are authoritative from the Stripe webhook
   // (uses admin SDK which bypasses these rules entirely).
