@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subDays, parseISO } from 'date-fns';
-import type { WorkoutLog } from '@shared/schema';
+import type { WorkoutLog } from '@/hooks/use-workouts';
 
 interface ProgressChartProps {
   logs: WorkoutLog[];
