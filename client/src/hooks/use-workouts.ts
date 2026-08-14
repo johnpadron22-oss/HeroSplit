@@ -280,6 +280,16 @@ export function useUpgradePro() {
 // Keep useTogglePro as alias so PaywallDialog compiles until it's updated
 export const useTogglePro = useUpgradePro;
 
+// ── Quick Pro check (lightweight — avoids pulling full progress) ──────────────
+
+export function useIsPro(): boolean {
+  const { user } = db.useAuth();
+  const { data } = db.useQuery(
+    user ? { userProfiles: { $: { where: { userId: user.id } } } } : null
+  );
+  return (data?.userProfiles?.[0] as UserProfile | undefined)?.isPro ?? false;
+}
+
 // ── Billing Portal ────────────────────────────────────────────────────────────
 
 export function useManageBilling() {

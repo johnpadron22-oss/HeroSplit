@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRoute, Link } from "wouter";
-import { useWorkout, useCreateLog } from "@/hooks/use-workouts";
+import { useWorkout, useCreateLog, useIsPro } from "@/hooks/use-workouts";
+import { PaywallDialog } from "@/components/PaywallDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,8 @@ export default function WorkoutView() {
   const slug = params?.slug ?? "";
   const { data: workout, isLoading } = useWorkout(slug);
   const { mutate: createLog, isPending: isSaving } = useCreateLog();
+  const isPro = useIsPro();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // Phase
   const [phase, setPhase] = useState<Phase>("preview");
@@ -129,6 +132,36 @@ export default function WorkoutView() {
         <h1 className="text-2xl font-bold">Workout not found</h1>
         <Link href="/"><Button variant="outline">Return Home</Button></Link>
       </div>
+    );
+  }
+
+  // Pro gate — block direct URL access to Pro workouts for free users
+  if (workout.isPro && !isPro) {
+    return (
+      <>
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center gap-6">
+          <div className="text-6xl">{workout.avatarEmoji ?? "🔒"}</div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-display font-black">{workout.name}</h1>
+            <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+              This workout is part of the Pro tier. Unlock it to start training.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <Button
+              size="lg"
+              className="h-13 rounded-full bg-purple-600 hover:bg-purple-500 text-white font-bold"
+              onClick={() => setShowPaywall(true)}
+            >
+              Unlock Pro
+            </Button>
+            <Link href="/">
+              <Button variant="ghost" className="w-full">← Back to workouts</Button>
+            </Link>
+          </div>
+        </div>
+        <PaywallDialog open={showPaywall} onOpenChange={setShowPaywall} />
+      </>
     );
   }
 
