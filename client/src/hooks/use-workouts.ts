@@ -264,3 +264,34 @@ export function useUpgradePro() {
 
 // Keep useTogglePro as alias so PaywallDialog compiles until it's updated
 export const useTogglePro = useUpgradePro;
+
+// ── Billing Portal ────────────────────────────────────────────────────────────
+
+export function useManageBilling() {
+  const [isPending, setIsPending] = useState(false);
+  const { toast } = useToast();
+
+  const openPortal = async (customerId: string) => {
+    setIsPending(true);
+    try {
+      const res = await fetch("/api/customer-portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error ?? "Portal error");
+      window.location.href = json.url;
+    } catch (e: any) {
+      toast({
+        title: "Billing Error",
+        description: e.message ?? "Could not open billing portal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return { openPortal, isPending };
+}

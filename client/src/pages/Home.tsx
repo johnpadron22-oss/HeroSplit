@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useWorkouts, useUserProgress } from "@/hooks/use-workouts";
+import { useWorkouts, useUserProgress, useManageBilling } from "@/hooks/use-workouts";
 import { useAuth } from "@/hooks/use-auth";
 import { WorkoutCard } from "@/components/WorkoutCard";
 import { PaywallDialog } from "@/components/PaywallDialog";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
-import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function Home() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const { openPortal, isPending: portalPending } = useManageBilling();
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const { data: heroWorkouts, isLoading: loadingHero } = useWorkouts("hero");
@@ -384,6 +385,32 @@ export default function Home() {
                     )}
                   </div>
                 </div>
+
+                {/* Subscription management — Pro users only */}
+                {isPro && progress?.profile?.stripeCustomerId && (
+                  <div className="bg-card border border-purple-500/20 p-5 rounded-2xl flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+                        <CreditCard className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-sm">Pro Subscription</div>
+                        <div className="text-xs text-muted-foreground">Manage billing, cancel, or view invoices</div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 border-purple-500/30 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+                      onClick={() => openPortal(progress.profile!.stripeCustomerId!)}
+                      disabled={portalPending}
+                    >
+                      {portalPending
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <><ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Manage</>}
+                    </Button>
+                  </div>
+                )}
 
                 {/* Training system guide */}
                 <div className="bg-card border border-white/5 p-6 rounded-2xl space-y-4">
