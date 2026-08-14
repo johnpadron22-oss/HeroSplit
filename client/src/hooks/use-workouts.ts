@@ -161,6 +161,7 @@ export function useCreateLog() {
           db.tx.userProfiles[profile.id].update({
             totalXP:       (profile.totalXP      ?? 0) + (data.xpEarned ?? 0),
             totalWorkouts: (profile.totalWorkouts ?? 0) + 1,
+            currentStreak: newStreak,
             longestStreak: newLongest,
           })
         );

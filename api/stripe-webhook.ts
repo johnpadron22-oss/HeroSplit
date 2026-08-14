@@ -56,7 +56,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const profile = result.userProfiles?.[0] as { id: string } | undefined;
 
     if (profile) {
-      await db.transact([tx.userProfiles[profile.id].update({ isPro: true })]);
+      await db.transact([
+        tx.userProfiles[profile.id].update({
+          isPro: true,
+          stripeCustomerId: session.customer as string,
+        }),
+      ]);
     } else {
       // Create profile with isPro if it doesn't exist yet
       await db.transact([
