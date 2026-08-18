@@ -595,6 +595,8 @@ export default function Landing() {
           <p className="text-xs text-muted-foreground">© 2026 HeroSplit. Built for those who train.</p>
           <div className="flex gap-4 text-xs text-muted-foreground">
             <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+            <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
+            <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
             <button onClick={loginWithGoogle} className="hover:text-foreground transition-colors">Sign In</button>
           </div>
         </div>

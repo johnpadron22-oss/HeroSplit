@@ -11,6 +11,8 @@ import { Loader2 } from "lucide-react";
 const Home        = lazy(() => import("@/pages/Home"));
 const Landing     = lazy(() => import("@/pages/Landing"));
 const WorkoutView = lazy(() => import("@/pages/WorkoutView"));
+const Terms       = lazy(() => import("@/pages/Terms"));
+const Privacy     = lazy(() => import("@/pages/Privacy"));
 const NotFound    = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
@@ -40,6 +42,9 @@ function Router() {
         <Route path="/workout/:slug">
           {isAuthenticated ? <WorkoutView /> : <Redirect to="/landing" />}
         </Route>
+
+        <Route path="/terms" component={Terms} />
+        <Route path="/privacy" component={Privacy} />
 
         <Route component={NotFound} />
       </Switch>
