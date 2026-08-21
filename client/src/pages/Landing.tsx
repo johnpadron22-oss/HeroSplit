@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { InfoCard } from "@/components/ui/info-card";
 import { motion } from "framer-motion";
 import { ArrowRight, Zap, TrendingUp, Flame, Trophy, Lock, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -251,47 +252,59 @@ export default function Landing() {
             <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-display font-black">Three steps to your first session</motion.h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="flex flex-wrap justify-center gap-6">
             {[
               {
                 step: "01",
-                emoji: "⚔️",
                 title: "Choose Your Path",
                 desc: "Sign up with Google in one tap. Pick Hero or Villain. Choose your archetype — Dark Vigilante, Thunder Giant, Void Sorcerer, and more.",
-                color: "from-cyan-500/10 to-transparent border-cyan-500/20",
-                accent: "text-cyan-400",
+                // Gym floor / equipment — establishes the setting
+                image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop",
+                borderColor: "#22d3ee",
+                effectBgColor: "#22d3ee",
+                hoverTextColor: "#09090b",
               },
               {
                 step: "02",
-                emoji: "🏋️",
                 title: "Train & Earn XP",
-                desc: "Log real weights, reps, and sets. Every completed set earns XP. Watch your rank climb from F → D → C → B → A → S → SS → SSS.",
-                color: "from-purple-500/10 to-transparent border-purple-500/20",
-                accent: "text-purple-400",
+                desc: "Log real weights, reps, and sets. Every completed set earns XP. Watch your rank climb from F to D to C to B to A to S to SS to SSS.",
+                // Person lifting / intense training
+                image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&auto=format&fit=crop",
+                borderColor: "#fbbf24",
+                effectBgColor: "#fbbf24",
+                hoverTextColor: "#09090b",
               },
               {
                 step: "03",
-                emoji: "🎁",
                 title: "Level Up & Loot",
                 desc: "Finish a workout and get a loot drop — Common, Rare, Epic, or Legendary. Build your streak. Progress through Foundation, Blueprint, Nemesis.",
-                color: "from-yellow-500/10 to-transparent border-yellow-500/20",
-                accent: "text-yellow-400",
+                // Athletic achievement / celebration
+                image: "https://images.unsplash.com/photo-1549476464-37392f717541?w=600&auto=format&fit=crop",
+                borderColor: "#a855f7",
+                effectBgColor: "#a855f7",
+                hoverTextColor: "#f5f5f5",
               },
-            ].map((item) => (
+            ].map((item, i) => (
               <motion.div
                 key={item.step}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
-                className={cn("p-7 rounded-2xl bg-gradient-to-b border", item.color)}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
               >
-                <div className={cn("text-xs font-black font-mono uppercase tracking-widest mb-4", item.accent)}>
-                  Step {item.step}
-                </div>
-                <div className="text-4xl mb-4">{item.emoji}</div>
-                <h3 className="text-xl font-display font-black mb-3">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                <InfoCard
+                  image={item.image}
+                  title={`${item.step} — ${item.title}`}
+                  description={item.desc}
+                  width={300}
+                  height={358}
+                  imageHeight={162}
+                  borderColor={item.borderColor}
+                  effectBgColor={item.effectBgColor}
+                  hoverTextColor={item.hoverTextColor}
+                  borderBgColor="#09090b"
+                  cardBgColor="#09090b"
+                />
               </motion.div>
             ))}
           </div>
