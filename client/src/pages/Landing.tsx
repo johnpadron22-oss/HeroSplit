@@ -168,7 +168,7 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════ */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-28">
+      <section className="max-w-6xl mx-auto px-6 pt-14 pb-16">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Left: copy */}
           <motion.div
@@ -209,7 +209,7 @@ export default function Landing() {
             </motion.div>
 
             {/* Mini stats */}
-            <motion.div variants={fadeUp} className="flex flex-wrap gap-x-6 gap-y-2 mt-10">
+            <motion.div variants={fadeUp} className="flex flex-wrap gap-x-6 gap-y-2 mt-6">
               {[
                 { value: "37", label: "Workouts" },
                 { value: "3", label: "Training Tiers" },
@@ -239,14 +239,14 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           HOW IT WORKS
       ══════════════════════════════════════════════ */}
-      <section className="border-t border-white/5 py-24">
+      <section className="border-t border-white/5 py-14">
         <div className="max-w-5xl mx-auto px-6">
           <motion.div
             variants={stagger}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            className="text-center mb-14"
+            viewport={{ once: true, margin: "-60px" }}
+            className="text-center mb-8"
           >
             <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">How it works</motion.p>
             <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-display font-black">Three steps to your first session</motion.h2>
@@ -314,9 +314,9 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           TRAINING TIERS
       ══════════════════════════════════════════════ */}
-      <section className="border-t border-white/5 py-24 bg-white/[0.01]">
+      <section className="border-t border-white/5 py-12 bg-white/[0.01]">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-14">
+          <div className="text-center mb-8">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Progressive system</p>
             <h2 className="text-3xl md:text-4xl font-display font-black">Built to scale with you</h2>
             <p className="text-muted-foreground mt-3 max-w-md mx-auto">Start where you are. Every tier uses <strong className="text-foreground">double progression</strong> — add reps, then add weight. No guesswork.</p>
@@ -416,9 +416,9 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           FEATURES GRID
       ══════════════════════════════════════════════ */}
-      <section className="border-t border-white/5 py-24">
+      <section className="border-t border-white/5 py-12">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-14">
+          <div className="text-center mb-8">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Everything included</p>
             <h2 className="text-3xl md:text-4xl font-display font-black">The full system</h2>
           </div>
@@ -482,9 +482,9 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           PRICING
       ══════════════════════════════════════════════ */}
-      <section id="pricing" className="border-t border-white/5 py-24 bg-white/[0.01]">
+      <section id="pricing" className="border-t border-white/5 py-12 bg-white/[0.01]">
         <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-14">
+          <div className="text-center mb-8">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Pricing</p>
             <h2 className="text-3xl md:text-4xl font-display font-black">Simple. No tricks.</h2>
             <p className="text-muted-foreground mt-3">Start free. Unlock everything for less than a protein bar a week.</p>
@@ -594,7 +594,7 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           FINAL CTA
       ══════════════════════════════════════════════ */}
-      <section className="border-t border-white/5 py-28">
+      <section className="border-t border-white/5 py-16">
         <div className="max-w-2xl mx-auto px-6 text-center">
           <motion.div
             variants={stagger}
