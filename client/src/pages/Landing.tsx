@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ArrowRight, Zap, TrendingUp, Flame, Trophy, Lock, Check, ChevronDown } from "lucide-react";
+import { ArrowRight, Zap, TrendingUp, Flame, Trophy, Lock, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
@@ -15,87 +15,114 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
-// ── Mock UI card shown in hero ────────────────────────────────────────────────
+// ── App UI preview — mirrors the real app as closely as possible ──────────────
 function AppMockup() {
   return (
-    <div className="relative mx-auto w-full max-w-xs select-none pointer-events-none">
-      {/* Glow */}
-      <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/20 to-purple-500/20 blur-3xl rounded-3xl" />
+    <div className="relative mx-auto w-full max-w-[300px] select-none pointer-events-none">
+      {/* Subtle drop shadow only — no orb glow */}
+      <div className="absolute inset-0 translate-y-4 scale-95 bg-black/40 blur-2xl rounded-[2.5rem]" />
 
-      {/* Phone shell */}
-      <div className="relative rounded-3xl border border-white/10 bg-zinc-950 shadow-2xl overflow-hidden">
+      {/* Phone frame — tight bezels, pill notch */}
+      <div className="relative rounded-[2.5rem] border border-white/10 bg-[#0a0a0a] shadow-2xl overflow-hidden">
+
         {/* Status bar */}
-        <div className="h-8 bg-zinc-900 flex items-center justify-between px-5">
-          <span className="text-[10px] text-white/40 font-mono">9:41</span>
-          <div className="flex gap-1">
-            {[1,2,3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-white/30" />)}
+        <div className="flex items-center justify-between px-6 pt-3 pb-1">
+          <span className="text-[10px] text-white/50 font-semibold tracking-tight">9:41</span>
+          {/* Pill notch */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-0 w-20 h-5 bg-[#0a0a0a] rounded-b-2xl" />
+          <div className="flex items-center gap-1 text-white/50">
+            <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="currentColor">
+              <rect x="0" y="3" width="2" height="9" rx="0.5"/><rect x="3.5" y="2" width="2" height="10" rx="0.5"/><rect x="7" y="0.5" width="2" height="11.5" rx="0.5"/><rect x="10.5" y="1" width="1.5" height="11" rx="0.5" fillOpacity="0.3"/>
+            </svg>
+            <svg className="w-3 h-3" viewBox="0 0 14 10" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M1 4.5C3 2.5 5 1.5 7 1.5s4 1 6 3"/><path d="M3 6.5C4.3 5.2 5.6 4.5 7 4.5s2.7.7 4 2"/><circle cx="7" cy="8.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+            <div className="w-5 h-2.5 rounded-sm border border-white/40 flex items-center px-0.5">
+              <div className="h-1.5 w-3.5 rounded-[1px] bg-white/70" />
+            </div>
           </div>
         </div>
 
-        <div className="px-4 py-3 space-y-3">
-          {/* Profile row */}
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-cyan-900/40 to-purple-900/40 border border-white/10">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-lg">🦇</div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold text-white">Shadow Knight</div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded font-bold">RANK B</div>
-                <div className="text-[10px] text-white/40">Warrior</div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xs font-bold text-yellow-400">4,200 XP</div>
-              <div className="flex items-center gap-1 justify-end mt-0.5">
-                <Flame className="w-2.5 h-2.5 text-orange-400" />
-                <span className="text-[10px] text-white/50">7 day streak</span>
-              </div>
+        {/* App header */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+          <div className="text-sm font-display font-black italic tracking-tighter">
+            <span className="text-cyan-400">HERO</span><span className="text-white">SPLIT</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+              <span className="text-[10px] font-bold text-white/60">J</span>
             </div>
           </div>
+        </div>
 
-          {/* XP bar */}
-          <div className="space-y-1 px-1">
-            <div className="flex justify-between text-[10px] text-white/40">
-              <span>Rank B → A</span>
-              <span>4,200 / 7,000</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full" style={{ width: "60%" }} />
-            </div>
-          </div>
-
-          {/* Workout cards */}
+        {/* Tab bar */}
+        <div className="flex items-center gap-0.5 mx-3 my-2 p-0.5 bg-white/5 rounded-full">
           {[
-            { emoji: "🦇", name: "Dark Vigilante", tag: "Foundation", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
-            { emoji: "⚡", name: "Thunder God", tag: "Blueprint", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20", locked: false },
-            { emoji: "☠️", name: "Void Sorcerer", tag: "Nemesis Pro", color: "text-purple-400 bg-purple-500/10 border-purple-500/20", locked: true },
+            { label: "Heroes",   active: true,  color: "bg-cyan-400 text-black" },
+            { label: "Anime",    active: false, color: "" },
+            { label: "Villains", active: false, color: "" },
+            { label: "Progress", active: false, color: "" },
+          ].map((t) => (
+            <div
+              key={t.label}
+              className={cn(
+                "flex-1 text-center text-[9px] font-bold py-1 rounded-full transition-all",
+                t.active ? t.color : "text-white/30"
+              )}
+            >
+              {t.label}
+            </div>
+          ))}
+        </div>
+
+        <div className="px-3 pb-3 space-y-2">
+          {/* Section label */}
+          <div className="flex items-center justify-between px-0.5">
+            <span className="text-[11px] font-display font-black text-cyan-400">Hero Workouts</span>
+            <span className="text-[8px] font-mono uppercase tracking-widest text-white/30 border border-white/10 px-1.5 py-0.5 rounded">Free</span>
+          </div>
+
+          {/* Workout cards — exact style as real WorkoutCard */}
+          {[
+            { emoji: "🦇", name: "Dark Vigilante",   sub: "Push · Foundation",  tier: "Foundation", tc: "text-cyan-400",   bc: "bg-cyan-500/10 border-cyan-500/20",   sets: "4×8–12", xp: "+25 XP" },
+            { emoji: "🌩️", name: "Thunder Giant",    sub: "Pull · Foundation",  tier: "Foundation", tc: "text-cyan-400",   bc: "bg-cyan-500/10 border-cyan-500/20",   sets: "4×8–12", xp: "+25 XP" },
+            { emoji: "💀", name: "Void Sorcerer",    sub: "PPL · Nemesis",      tier: "Nemesis",    tc: "text-purple-400", bc: "bg-purple-500/10 border-purple-500/20", sets: "5×5–8",  xp: "Pro", lock: true },
           ].map((w) => (
-            <div key={w.name} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
-              <div className="text-xl">{w.emoji}</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold text-white truncate">{w.name}</div>
-                <div className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block mt-0.5 border", w.color)}>{w.tag}</div>
+            <div key={w.name} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-base shrink-0">
+                {w.emoji}
               </div>
-              {w.locked
-                ? <Lock className="w-3.5 h-3.5 text-white/20 shrink-0" />
-                : <ArrowRight className="w-3.5 h-3.5 text-white/20 shrink-0" />}
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] font-bold text-white truncate">{w.name}</div>
+                <div className="text-[9px] text-white/40 mt-0.5">{w.sub}</div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className={cn("text-[8px] font-bold px-1.5 py-0.5 rounded border", w.bc, w.tc)}>{w.tier}</span>
+                  <span className="text-[8px] text-white/30">{w.sets}</span>
+                </div>
+              </div>
+              <div className="shrink-0 flex flex-col items-end gap-1">
+                {w.lock
+                  ? <Lock className="w-3 h-3 text-white/20" />
+                  : <ArrowRight className="w-3 h-3 text-white/20" />}
+                <span className={cn("text-[8px] font-bold", w.lock ? "text-purple-400/60" : "text-yellow-400/80")}>{w.xp}</span>
+              </div>
             </div>
           ))}
 
-          {/* Loot drop teaser */}
-          <div className="mx-1 p-3 rounded-xl border-2 border-yellow-500/40 bg-yellow-500/10 text-center">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-yellow-300/60 mb-1">Loot Drop!</div>
-            <div className="text-2xl mb-1">⚡</div>
-            <div className="text-[10px] font-bold text-yellow-300 uppercase tracking-wider">Legendary</div>
-            <div className="text-xs font-black text-white">Lightning Gauntlet</div>
-            <div className="text-[10px] text-yellow-400 font-semibold">+50 STR</div>
+          {/* Loot drop — compact */}
+          <div className="flex items-center gap-2.5 p-2.5 rounded-xl border border-yellow-500/30 bg-yellow-500/[0.06]">
+            <div className="w-9 h-9 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-base shrink-0">⚡</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[8px] font-bold uppercase tracking-widest text-yellow-300/50">Loot Drop Earned</div>
+              <div className="text-[11px] font-black text-white">Lightning Gauntlet</div>
+              <div className="text-[8px] text-yellow-400 font-semibold">Legendary · +50 STR</div>
+            </div>
           </div>
         </div>
 
-        {/* Bottom nav */}
-        <div className="h-12 border-t border-white/5 bg-zinc-900 flex items-center justify-around px-6">
-          {["🏠", "⚔️", "📊", "👤"].map((icon, i) => (
-            <div key={i} className={cn("text-base", i === 0 ? "opacity-100" : "opacity-30")}>{icon}</div>
-          ))}
+        {/* Home indicator */}
+        <div className="flex justify-center pb-2 pt-1">
+          <div className="w-24 h-1 rounded-full bg-white/20" />
         </div>
       </div>
     </div>
@@ -110,11 +137,9 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
 
-      {/* ── Ambient glows ── */}
+      {/* ── Subtle top vignette — not orbs, just a hint of depth ── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] bg-cyan-500/8 blur-[120px] rounded-full" />
-        <div className="absolute top-[40%] right-[-15%] w-[45%] h-[45%] bg-purple-500/8 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-500/5 blur-[100px] rounded-full" />
+        <div className="absolute top-0 left-0 right-0 h-[40vh] bg-gradient-to-b from-cyan-950/20 to-transparent" />
       </div>
 
       {/* ══════════════════════════════════════════════
@@ -158,13 +183,13 @@ export default function Landing() {
 
             <motion.h1 variants={fadeUp} className="text-5xl md:text-6xl font-display font-black tracking-tight leading-[1.05] mb-6">
               Train Like Your<br />
-              <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 bg-clip-text text-transparent">
+              <span className="text-hero">
                 Favorite Hero.
               </span>
             </motion.h1>
 
             <motion.p variants={fadeUp} className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-md">
-              Anime-inspired workout programs with XP ranks, loot drops, and real progressive overload. From beginner to elite — all in one app.
+              Anime-inspired workout programs with XP ranks, loot drops, and real progressive overload. Beginner to elite, all in one app.
             </motion.p>
 
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3">
@@ -364,7 +389,7 @@ export default function Landing() {
                 <ul className="space-y-2">
                   {tier.perks.map((p) => (
                     <li key={p} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className={cn("w-3.5 h-3.5 shrink-0", tier.accentColor)} />
+                      <span className={cn("shrink-0 font-bold text-xs w-3.5 text-center", tier.accentColor)}>—</span>
                       {p}
                     </li>
                   ))}
@@ -382,7 +407,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-14">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Everything included</p>
-            <h2 className="text-3xl md:text-4xl font-display font-black">Not just a workout tracker</h2>
+            <h2 className="text-3xl md:text-4xl font-display font-black">The full system</h2>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -496,7 +521,7 @@ export default function Landing() {
                   "Loot drops",
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-3 text-sm">
-                    <Check className="w-4 h-4 text-green-400 shrink-0" />
+                    <span className="w-4 shrink-0 text-center text-white/30 font-bold text-xs">—</span>
                     {f}
                   </li>
                 ))}
@@ -538,7 +563,7 @@ export default function Landing() {
                     "Cancel anytime via billing portal",
                   ].map((f) => (
                     <li key={f} className="flex items-center gap-3 text-sm">
-                      <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                      <span className="w-4 shrink-0 text-center text-purple-400 font-bold text-xs">—</span>
                       {f}
                     </li>
                   ))}
