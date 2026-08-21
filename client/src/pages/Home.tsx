@@ -8,12 +8,13 @@ import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
-import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus } from "lucide-react";
+import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus, Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { db, id } from "@/lib/db";
 import { useToast } from "@/hooks/use-toast";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 export default function Home() {
   const [showPaywall, setShowPaywall] = useState(false);
@@ -34,6 +35,22 @@ export default function Home() {
   };
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const { permission, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } = usePushNotifications();
+
+  const handlePushToggle = async () => {
+    if (!user) return;
+    try {
+      if (isSubscribed) {
+        await unsubscribe(user.id);
+        toast({ title: "Notifications off", description: "You won't receive streak reminders." });
+      } else {
+        await subscribe(user.id);
+        toast({ title: "Notifications on 🔔", description: "We'll remind you before your streak resets." });
+      }
+    } catch {
+      toast({ title: "Couldn't update notifications", description: "Check your browser settings.", variant: "destructive" });
+    }
+  };
   const { data: heroWorkouts, isLoading: loadingHero } = useWorkouts("hero");
   const { data: villainWorkouts, isLoading: loadingVillain } = useWorkouts("villain");
   const { data: animeWorkouts, isLoading: loadingAnime } = useWorkouts("anime");
@@ -92,6 +109,35 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Push notification bell — hidden if unsupported */}
+            {permission !== "unsupported" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "transition-colors",
+                  isSubscribed
+                    ? "text-cyan-400 hover:text-cyan-300"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={handlePushToggle}
+                disabled={pushLoading || permission === "denied"}
+                title={
+                  permission === "denied"
+                    ? "Notifications blocked — enable in browser settings"
+                    : isSubscribed
+                    ? "Disable streak reminders"
+                    : "Enable streak reminders"
+                }
+              >
+                {isSubscribed ? (
+                  <Bell className="w-5 h-5" />
+                ) : (
+                  <BellOff className="w-5 h-5" />
+                )}
+              </Button>
+            )}
+
             {/* Feedback — always visible */}
             <Button
               variant="ghost"

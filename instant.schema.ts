@@ -41,6 +41,13 @@ const _schema = i.schema({
       archetype: i.string().optional(),
       experienceLevel: i.string().optional(),
     }),
+    pushSubscriptions: i.entity({
+      userId: i.string().indexed(),
+      endpoint: i.string().unique(),
+      p256dh: i.string(),
+      auth: i.string(),
+      createdAt: i.number(),
+    }),
     userProfiles: i.entity({
       userId: i.string().unique().indexed(),
       isPro: i.boolean(),
