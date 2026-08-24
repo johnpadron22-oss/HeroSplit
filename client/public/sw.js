@@ -1,7 +1,47 @@
-// HeroSplit Service Worker — handles web push notifications
+// HeroSplit Service Worker — offline support + web push notifications
 
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+const CACHE_NAME = "herosplit-v1";
+const OFFLINE_URLS = ["/", "/manifest.json", "/favicon.png"];
+
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_URLS))
+  );
+});
+
+self.addEventListener("activate", (event) =>
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      // Remove old caches
+      caches.keys().then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      ),
+    ])
+  )
+);
+
+// Network-first fetch: serve from network, fall back to cache
+self.addEventListener("fetch", (event) => {
+  // Only handle GET requests to our own origin
+  if (event.request.method !== "GET") return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        // Cache successful HTML/JS/CSS/image responses
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
+  );
+});
 
 // ── Push handler ─────────────────────────────────────────────────────────────
 self.addEventListener("push", (event) => {
