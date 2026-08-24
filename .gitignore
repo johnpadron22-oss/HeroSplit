@@ -13,3 +13,4 @@ vite.config.ts.*
 client_secret_*.json
 *.pdf
 .env*
+.keys/
