@@ -1,0 +1,32 @@
+{
+  "$schema": "https://claude.ai/schemas/plugin-marketplace/v1.json",
+  "id": "21st-dev/claude-code-plugin",
+  "name": "21st.dev",
+  "version": "1.0.0",
+  "description": "AI-powered UI components from the 21st.dev registry. Search, install, and generate shadcn/ui-compatible React components with Magic AI.",
+  "author": {
+    "name": "21st.dev",
+    "url": "https://21st.dev"
+  },
+  "repository": "https://github.com/21st-dev/claude-code-plugin",
+  "homepage": "https://21st.dev",
+  "keywords": ["ui", "components", "shadcn", "tailwind", "react", "ai", "magic"],
+  "categories": ["frontend", "design", "ai"],
+  "license": "MIT",
+  "install": {
+    "ref": "plugins/21st",
+    "envVars": [
+      {
+        "name": "API_KEY_21ST",
+        "description": "Your 21st.dev API key — get one at https://21st.dev/settings/api-keys",
+        "required": true,
+        "secret": true
+      }
+    ]
+  },
+  "compatibility": {
+    "frameworks": ["react", "next", "vite", "remix"],
+    "uiLibraries": ["shadcn/ui", "radix-ui"],
+    "styling": ["tailwindcss"]
+  }
+}
