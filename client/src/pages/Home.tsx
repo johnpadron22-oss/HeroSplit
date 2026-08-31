@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkouts, useUserProgress, useManageBilling } from "@/hooks/use-workouts";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,7 +9,7 @@ import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
-import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus } from "lucide-react";
+import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -92,6 +93,18 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* YouTube Agent */}
+            <Link href="/youtube-agent">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-red-500"
+                title="YouTube Agent"
+              >
+                <Youtube className="w-5 h-5" />
+              </Button>
+            </Link>
+
             {/* Feedback — always visible */}
             <Button
               variant="ghost"
