@@ -6,7 +6,6 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { InsertWorkout, workouts } from "@shared/schema";
 import { db } from "./db";
-import { registerYouTubeAgentRoutes } from "./youtube-agent-routes";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -107,9 +106,6 @@ export async function registerRoutes(
 
   // Seed Data on startup
   seedDatabase();
-
-  // YouTube Automation Agent routes
-  registerYouTubeAgentRoutes(app);
 
   return httpServer;
 }

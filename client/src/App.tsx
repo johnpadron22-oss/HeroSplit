@@ -8,13 +8,12 @@ import { Loader2 } from "lucide-react";
 // Lazy-loaded pages — each becomes its own JS chunk, keeping the
 // initial bundle small. The loading fallback is the same spinner
 // the auth check already shows, so there's no visible flash.
-const Home          = lazy(() => import("@/pages/Home"));
-const Landing       = lazy(() => import("@/pages/Landing"));
-const WorkoutView   = lazy(() => import("@/pages/WorkoutView"));
-const Terms         = lazy(() => import("@/pages/Terms"));
-const Privacy       = lazy(() => import("@/pages/Privacy"));
-const YouTubeAgent  = lazy(() => import("@/pages/YouTubeAgent"));
-const NotFound      = lazy(() => import("@/pages/not-found"));
+const Home        = lazy(() => import("@/pages/Home"));
+const Landing     = lazy(() => import("@/pages/Landing"));
+const WorkoutView = lazy(() => import("@/pages/WorkoutView"));
+const Terms       = lazy(() => import("@/pages/Terms"));
+const Privacy     = lazy(() => import("@/pages/Privacy"));
+const NotFound    = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
   return (
@@ -46,10 +45,6 @@ function Router() {
 
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
-
-        <Route path="/youtube-agent">
-          {isAuthenticated ? <YouTubeAgent /> : <Redirect to="/landing" />}
-        </Route>
 
         <Route component={NotFound} />
       </Switch>
