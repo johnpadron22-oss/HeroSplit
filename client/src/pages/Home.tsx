@@ -12,7 +12,8 @@ import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, Chevron
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { db, id } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
@@ -22,6 +23,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("browse");
   const [recommendation, setRecommendation] = useState<string | null>(null);
   const { openPortal, isPending: portalPending } = useManageBilling();
+  const queryClient = useQueryClient();
 
   const handleOnboardingComplete = (expLevel: "beginner" | "intermediate" | "advanced" | "veteran") => {
     const tier =
@@ -53,21 +55,23 @@ export default function Home() {
     }
   }, [toast]);
 
-  // Auto-create userProfile on first login
+  // Auto-create user_profile on first login (if none exists yet)
   useEffect(() => {
     if (!user || loadingProgress) return;
     if (!progress?.profile) {
-      db.transact([
-        db.tx.userProfiles[id()].update({
-          userId: user.id,
-          isPro: false,
-          currentStreak: 0,
-          longestStreak: 0,
-          totalWorkouts: 0,
-        }),
-      ]);
+      supabase.from("user_profiles").insert({
+        user_id:        user.id,
+        is_pro:         false,
+        current_streak: 0,
+        longest_streak: 0,
+        total_workouts: 0,
+        total_xp:       0,
+      }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["userProgress"] });
+      });
     }
-  }, [user, loadingProgress, progress?.profile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, loadingProgress, progress?.profile]);
 
   // Derive display name from email (e.g. "jonathan@gmail.com" → "Jonathan")
   const displayName = user?.email

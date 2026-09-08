@@ -1,53 +1,54 @@
 #!/usr/bin/env node
 /**
- * HeroSplit Database Restore Script
+ * HeroSplit Database Restore Script (Supabase)
  *
  * Restores data from a backup JSON file created by scripts/backup-db.mjs.
- * Uses the InstantDB Admin SDK (bypasses all permission rules).
+ * Uses the Supabase service role key (bypasses all RLS policies).
  *
  * Usage:
  *   node scripts/restore-db.mjs <backup-file>
  *   node scripts/restore-db.mjs backups/herosplit-backup-2026-09-08T12-00-00.json
  *
  * Options:
- *   --entity=userProfiles    Only restore a specific entity
- *   --skip-workouts          Skip restoring the workouts entity (re-seed instead)
+ *   --table=user_profiles    Only restore a specific table
+ *   --skip-workouts          Skip restoring the workouts table (re-seed instead)
  *   --dry-run                Print what would be done without writing
  *
  * Required env vars:
- *   INSTANT_APP_ID
- *   INSTANT_ADMIN_TOKEN
+ *   SUPABASE_URL
+ *   SUPABASE_SERVICE_ROLE_KEY
  *
- * ⚠️  WARNING: This script OVERWRITES existing records by ID. It does NOT
- * delete records that exist in the database but not in the backup file.
- * For a clean restore, coordinate with InstantDB support for a full wipe
- * before running this script.
+ * ⚠️  WARNING: This script uses UPSERT (insert or update by primary key).
+ * It does NOT delete records that exist in the database but not in the backup.
+ * For a clean restore, truncate tables in the Supabase SQL editor first.
  */
 
-import { init, id as newId, tx } from "@instantdb/admin";
+import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 
-const APP_ID      = process.env.INSTANT_APP_ID;
-const ADMIN_TOKEN = process.env.INSTANT_ADMIN_TOKEN;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!APP_ID)      { console.error("❌ INSTANT_APP_ID is required"); process.exit(1); }
-if (!ADMIN_TOKEN) { console.error("❌ INSTANT_ADMIN_TOKEN is required"); process.exit(1); }
+if (!SUPABASE_URL) { console.error("❌ SUPABASE_URL is required"); process.exit(1); }
+if (!SERVICE_KEY)  { console.error("❌ SUPABASE_SERVICE_ROLE_KEY is required"); process.exit(1); }
 
-const db = init({ appId: APP_ID, adminToken: ADMIN_TOKEN });
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+  auth: { persistSession: false },
+});
 
 // ── Arg parsing ────────────────────────────────────────────────────────────────
 
-const args = process.argv.slice(2);
-const backupFile   = args.find((a) => !a.startsWith("--"));
-const onlyEntity   = args.find((a) => a.startsWith("--entity="))?.split("=")[1];
+const args        = process.argv.slice(2);
+const backupFile  = args.find((a) => !a.startsWith("--"));
+const onlyTable   = args.find((a) => a.startsWith("--table="))?.split("=")[1];
 const skipWorkouts = args.includes("--skip-workouts");
-const dryRun       = args.includes("--dry-run");
+const dryRun      = args.includes("--dry-run");
 
 if (!backupFile) {
-  console.error("Usage: node scripts/restore-db.mjs <backup-file> [--entity=name] [--skip-workouts] [--dry-run]");
+  console.error("Usage: node scripts/restore-db.mjs <backup-file> [--table=name] [--skip-workouts] [--dry-run]");
   process.exit(1);
 }
 
@@ -58,11 +59,11 @@ if (!fs.existsSync(backupFile)) {
 
 // ── Restore logic ──────────────────────────────────────────────────────────────
 
-const BATCH_SIZE = 25; // InstantDB transaction limit per call
+const BATCH_SIZE = 100; // Supabase handles larger batches than InstantDB
 
-async function restoreEntity(entityName, records) {
+async function restoreTable(tableName, records) {
   if (!Array.isArray(records) || records.length === 0) {
-    console.log(`   ${entityName}: no records to restore`);
+    console.log(`   ${tableName}: no records to restore`);
     return;
   }
 
@@ -73,75 +74,63 @@ async function restoreEntity(entityName, records) {
     const batch = records.slice(i, i + BATCH_SIZE);
 
     if (dryRun) {
-      console.log(`   [dry-run] Would write ${batch.length} ${entityName} records (batch ${Math.floor(i/BATCH_SIZE)+1})`);
+      console.log(`   [dry-run] Would upsert ${batch.length} ${tableName} records (batch ${Math.floor(i/BATCH_SIZE)+1})`);
       restored += batch.length;
       continue;
     }
 
-    const transactions = batch.map((record) => {
-      const { id, ...fields } = record;
-      if (!id) {
-        console.warn(`   ⚠️  Record in ${entityName} missing id — skipping`);
-        return null;
-      }
-      return tx[entityName][id].update(fields);
-    }).filter(Boolean);
+    const { error } = await supabase
+      .from(tableName)
+      .upsert(batch, { onConflict: "id" });
 
-    if (transactions.length === 0) continue;
-
-    try {
-      await db.transact(transactions);
-      restored += transactions.length;
-      process.stdout.write(`\r   ${entityName}: ${restored}/${total} records`);
-    } catch (err) {
-      console.error(`\n   ❌ Failed writing batch to ${entityName}: ${err.message}`);
-      throw err;
+    if (error) {
+      console.error(`\n   ❌ Failed writing batch to ${tableName}: ${error.message}`);
+      throw error;
     }
+
+    restored += batch.length;
+    process.stdout.write(`\r   ${tableName}: ${restored}/${total} records`);
   }
 
-  process.stdout.write(`\r   ${entityName}: ${restored}/${total} records ✅\n`);
+  process.stdout.write(`\r   ${tableName}: ${restored}/${total} records ✅\n`);
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log(`\n🔄 HeroSplit Database Restore`);
-  console.log(`   App ID:      ${APP_ID}`);
+  console.log(`\n🔄 HeroSplit Database Restore (Supabase)`);
+  console.log(`   URL:         ${SUPABASE_URL}`);
   console.log(`   Backup file: ${backupFile}`);
   if (dryRun)       console.log("   Mode:        DRY RUN (no writes)\n");
-  if (onlyEntity)   console.log(`   Scope:       only ${onlyEntity}`);
-  if (skipWorkouts) console.log("   Skipping:    workouts (re-seed with seed-instant.mjs)");
+  if (onlyTable)    console.log(`   Scope:       only ${onlyTable}`);
+  if (skipWorkouts) console.log("   Skipping:    workouts (re-seed with seed-supabase.mjs)");
   console.log();
 
   const raw    = fs.readFileSync(backupFile, "utf-8");
   const backup = JSON.parse(raw);
 
   console.log(`   Backup exported: ${backup.meta?.exportedAt ?? "unknown"}`);
-  console.log(`   Backup app ID:   ${backup.meta?.appId ?? "unknown"}`);
-  if (backup.meta?.appId && backup.meta.appId !== APP_ID) {
-    console.error(`\n⚠️  WARNING: Backup was created from app ${backup.meta.appId} but restoring to ${APP_ID}`);
-    console.error("   Proceed only if you intend to migrate data between apps.\n");
-  }
+  console.log(`   Backup URL:      ${backup.meta?.supabaseUrl ?? backup.meta?.appId ?? "unknown"}`);
   console.log();
 
-  const entities = backup.meta?.entities ?? Object.keys(backup.data ?? {});
+  const tables = backup.meta?.tables ?? backup.meta?.entities ?? Object.keys(backup.data ?? {});
 
-  for (const entity of entities) {
-    if (onlyEntity && entity !== onlyEntity) continue;
-    if (skipWorkouts && entity === "workouts") {
-      console.log(`   workouts: skipped (re-seed with node scripts/seed-instant.mjs)`);
+  for (const table of tables) {
+    if (onlyTable && table !== onlyTable) continue;
+    if (skipWorkouts && table === "workouts") {
+      console.log(`   workouts: skipped (re-seed with node scripts/seed-supabase.mjs)`);
       continue;
     }
-    const records = backup.data?.[entity];
+    const records = backup.data?.[table];
     if (!records) {
-      console.log(`   ${entity}: not in backup`);
+      console.log(`   ${table}: not in backup`);
       continue;
     }
     if (records.error) {
-      console.log(`   ${entity}: ⚠️  backup contained error — ${records.error}`);
+      console.log(`   ${table}: ⚠️  backup contained error — ${records.error}`);
       continue;
     }
-    await restoreEntity(entity, records);
+    await restoreTable(table, records);
   }
 
   console.log(`\n✅ Restore complete${dryRun ? " (dry run — nothing was written)" : ""}\n`);

@@ -1,21 +1,22 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Stripe from "stripe";
-import { init, id, tx } from "@instantdb/admin";
+import { createClient } from "@supabase/supabase-js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-07-29.dahlia",
 });
 
-const db = init({
-  appId: process.env.INSTANT_APP_ID!,
-  adminToken: process.env.INSTANT_ADMIN_TOKEN!,
-});
+// Service role client — bypasses RLS entirely.
+// This is the ONLY place SUPABASE_SERVICE_ROLE_KEY should be used.
+const adminSupabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
 
 export const config = {
   api: { bodyParser: false },
 };
-
-const ALLOWED_ORIGIN = process.env.FRONTEND_URL ?? "https://herosplit.vercel.app";
 
 async function getRawBody(req: VercelRequest): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -49,87 +50,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ── checkout.session.completed → mark user as Pro ───────────────────────────
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.metadata?.userId;
+    const session   = event.data.object as Stripe.Checkout.Session;
+    const userId    = session.metadata?.userId;
     if (!userId) return res.json({ received: true });
 
     const customerId = session.customer as string;
-    const plan = (session.metadata?.plan as "monthly" | "annual") ?? "monthly";
-    const now = Date.now();
+    const plan       = (session.metadata?.plan as "monthly" | "annual") ?? "monthly";
+    const now        = Date.now();
 
-    // ── Write to userSubscriptions (the authoritative, client-locked entity) ──
-    const subResult = await db.query({
-      userSubscriptions: { $: { where: { userId } } },
-    });
-    const existingSub = (subResult.userSubscriptions as { id: string }[] | undefined)?.[0];
+    // Upsert into user_subscriptions (authoritative — service role bypasses RLS).
+    // Clients have NO write policy on this table, so this is the only path.
+    const { error: subError } = await adminSupabase
+      .from("user_subscriptions")
+      .upsert(
+        {
+          user_id:           userId,
+          is_pro:            true,
+          stripe_customer_id: customerId,
+          plan,
+          subscribed_at:     now,
+          cancelled_at:      null,
+        },
+        { onConflict: "user_id" }
+      );
 
-    if (existingSub) {
-      await db.transact([
-        tx.userSubscriptions[existingSub.id].update({
-          isPro: true,
-          stripeCustomerId: customerId,
-          plan,
-          subscribedAt: now,
-          cancelledAt: undefined,
-        }),
-      ]);
-    } else {
-      await db.transact([
-        tx.userSubscriptions[id()].update({
-          userId,
-          isPro: true,
-          stripeCustomerId: customerId,
-          plan,
-          subscribedAt: now,
-        }),
-      ]);
+    if (subError) {
+      console.error("stripe-webhook: user_subscriptions upsert failed", subError);
+      return res.status(500).json({ error: "DB write failed" });
     }
 
-    // ── Also update userProfile for legacy/display purposes ──────────────────
-    // (userProfiles.isPro is NOT used for access gating — userSubscriptions is)
-    const profileResult = await db.query({
-      userProfiles: { $: { where: { userId } } },
-    });
-    const profile = (profileResult.userProfiles as { id: string }[] | undefined)?.[0];
-    if (profile) {
-      await db.transact([
-        tx.userProfiles[profile.id].update({
-          isPro: true,
-          stripeCustomerId: customerId,
-        }),
-      ]);
-    }
+    // Mirror is_pro + stripe_customer_id to user_profiles for display purposes.
+    // (user_profiles.is_pro is NOT authoritative — never use it for access gating)
+    await adminSupabase
+      .from("user_profiles")
+      .update({ is_pro: true, stripe_customer_id: customerId })
+      .eq("user_id", userId);
   }
 
   // ── customer.subscription.deleted → revoke Pro ──────────────────────────────
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
-    const customerId = subscription.customer as string;
+    const customerId   = subscription.customer as string;
 
-    // Revoke via userSubscriptions
-    const subResult = await db.query({
-      userSubscriptions: { $: { where: { stripeCustomerId: customerId } } },
-    });
-    const existingSub = (subResult.userSubscriptions as { id: string }[] | undefined)?.[0];
-    if (existingSub) {
-      await db.transact([
-        tx.userSubscriptions[existingSub.id].update({
-          isPro: false,
-          cancelledAt: Date.now(),
-        }),
-      ]);
+    // Revoke Pro in user_subscriptions
+    const { error: subError } = await adminSupabase
+      .from("user_subscriptions")
+      .update({ is_pro: false, cancelled_at: Date.now() })
+      .eq("stripe_customer_id", customerId);
+
+    if (subError) {
+      console.error("stripe-webhook: user_subscriptions revoke failed", subError);
     }
 
-    // Mirror on userProfile for display
-    const profileResult = await db.query({
-      userProfiles: { $: { where: { stripeCustomerId: customerId } } },
-    });
-    const profile = (profileResult.userProfiles as { id: string }[] | undefined)?.[0];
-    if (profile) {
-      await db.transact([
-        tx.userProfiles[profile.id].update({ isPro: false }),
-      ]);
-    }
+    // Mirror on user_profiles for display
+    await adminSupabase
+      .from("user_profiles")
+      .update({ is_pro: false })
+      .eq("stripe_customer_id", customerId);
   }
 
   return res.json({ received: true });
