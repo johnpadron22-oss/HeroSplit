@@ -2,6 +2,18 @@ import { i } from "@instantdb/react";
 
 const _schema = i.schema({
   entities: {
+    // ── Subscription status — write-locked to admin SDK only (Stripe webhook).
+    // Clients can READ their own row but CANNOT create or update it.
+    // This is the sole authoritative source for isPro access gating.
+    userSubscriptions: i.entity({
+      userId: i.string().unique().indexed(),
+      isPro: i.boolean(),
+      stripeCustomerId: i.string().optional(),
+      plan: i.string().optional(),         // "monthly" | "annual"
+      subscribedAt: i.number().optional(), // epoch ms of most recent activation
+      cancelledAt: i.number().optional(),  // epoch ms of cancellation
+    }),
+
     workouts: i.entity({
       slug: i.string().indexed(),
       name: i.string(),

@@ -39,16 +39,29 @@ export default {
     },
   },
 
-  // Profiles: users can only read/write their own record.
-  // isPro and stripeCustomerId are authoritative from the Stripe webhook
-  // (uses admin SDK which bypasses these rules entirely).
-  // InstantDB CEL does not support `prev`, so field-level locking is enforced
-  // server-side only — the Stripe webhook is the sole writer of isPro.
+  // Profiles: users can read/write their own non-sensitive fields (alias,
+  // archetype, path, experienceLevel, streak stats).
+  // NOTE: isPro is no longer stored here for access-control purposes.
+  // The authoritative Pro gate is userSubscriptions (below), which is
+  // write-locked to the admin SDK (Stripe webhook) only.
   userProfiles: {
     allow: {
       view: "data.userId == auth.id",
       create: "auth.id != null && data.userId == auth.id",
       update: "data.userId == auth.id",
+      delete: "false",
+    },
+  },
+
+  // Subscription status — THE authoritative source for Pro access gating.
+  // Clients can read their own record but CANNOT create or update it.
+  // Only the Stripe webhook (admin SDK, bypasses these rules) writes here.
+  // This prevents any client from self-granting Pro by writing to InstantDB.
+  userSubscriptions: {
+    allow: {
+      view: "data.userId == auth.id",
+      create: "false",
+      update: "false",
       delete: "false",
     },
   },

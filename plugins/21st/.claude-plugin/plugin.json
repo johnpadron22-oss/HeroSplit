@@ -1,0 +1,58 @@
+{
+  "$schema": "https://claude.ai/schemas/plugin/v1.json",
+  "id": "21st",
+  "name": "21st.dev",
+  "version": "1.0.0",
+  "description": "AI-powered UI components — search the 21st.dev registry, install components via CLI, generate new ones with Magic AI, and sync Figma designs to code.",
+  "skills": [
+    {
+      "name": "21st-cli-use",
+      "path": "${CLAUDE_PLUGIN_ROOT}/skills/21st-cli-use/SKILL.md",
+      "triggers": [
+        "install component",
+        "add component",
+        "npx shadcn",
+        "21st install",
+        "21st add"
+      ]
+    },
+    {
+      "name": "21st-ai",
+      "path": "${CLAUDE_PLUGIN_ROOT}/skills/21st-ai/SKILL.md",
+      "triggers": [
+        "generate component",
+        "create ui",
+        "magic component",
+        "21st ai",
+        "build component with ai"
+      ]
+    },
+    {
+      "name": "21st-registry",
+      "path": "${CLAUDE_PLUGIN_ROOT}/skills/21st-registry/SKILL.md",
+      "triggers": [
+        "search components",
+        "find component",
+        "browse registry",
+        "21st registry",
+        "what components"
+      ]
+    },
+    {
+      "name": "21st-design-sync",
+      "path": "${CLAUDE_PLUGIN_ROOT}/skills/21st-design-sync/SKILL.md",
+      "triggers": [
+        "sync design",
+        "figma to code",
+        "design sync",
+        "21st design",
+        "implement design"
+      ]
+    }
+  ],
+  "mcpServers": {
+    "21st-magic": {
+      "configPath": "${CLAUDE_PLUGIN_ROOT}/.mcp.json"
+    }
+  }
+}

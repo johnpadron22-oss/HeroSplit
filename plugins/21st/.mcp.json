@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "21st-magic": {
+      "type": "http",
+      "url": "https://mcp.21st.dev/api/v1",
+      "headers": {
+        "x-api-key": "${API_KEY_21ST}"
+      },
+      "description": "21st.dev Magic MCP — component search, AI generation, and registry access",
+      "tools": [
+        "search_components",
+        "get_component",
+        "install_component",
+        "generate_component",
+        "list_categories",
+        "get_design_tokens"
+      ]
+    }
+  }
+}

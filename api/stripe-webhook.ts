@@ -15,6 +15,8 @@ export const config = {
   api: { bodyParser: false },
 };
 
+const ALLOWED_ORIGIN = process.env.FRONTEND_URL ?? "https://herosplit.vercel.app";
+
 async function getRawBody(req: VercelRequest): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -25,10 +27,12 @@ async function getRawBody(req: VercelRequest): Promise<Buffer> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Stripe webhooks are server-to-server — reject non-POST immediately.
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // ── Verify Stripe signature ──────────────────────────────────────────────────
   const sig = req.headers["stripe-signature"] as string;
   const rawBody = await getRawBody(req);
 
@@ -43,51 +47,88 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).send(`Webhook Error: ${(err as Error).message}`);
   }
 
+  // ── checkout.session.completed → mark user as Pro ───────────────────────────
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = session.metadata?.userId;
     if (!userId) return res.json({ received: true });
 
-    // Find the user's profile in InstantDB
-    const result = await db.query({
+    const customerId = session.customer as string;
+    const plan = (session.metadata?.plan as "monthly" | "annual") ?? "monthly";
+    const now = Date.now();
+
+    // ── Write to userSubscriptions (the authoritative, client-locked entity) ──
+    const subResult = await db.query({
+      userSubscriptions: { $: { where: { userId } } },
+    });
+    const existingSub = (subResult.userSubscriptions as { id: string }[] | undefined)?.[0];
+
+    if (existingSub) {
+      await db.transact([
+        tx.userSubscriptions[existingSub.id].update({
+          isPro: true,
+          stripeCustomerId: customerId,
+          plan,
+          subscribedAt: now,
+          cancelledAt: undefined,
+        }),
+      ]);
+    } else {
+      await db.transact([
+        tx.userSubscriptions[id()].update({
+          userId,
+          isPro: true,
+          stripeCustomerId: customerId,
+          plan,
+          subscribedAt: now,
+        }),
+      ]);
+    }
+
+    // ── Also update userProfile for legacy/display purposes ──────────────────
+    // (userProfiles.isPro is NOT used for access gating — userSubscriptions is)
+    const profileResult = await db.query({
       userProfiles: { $: { where: { userId } } },
     });
-
-    const profile = result.userProfiles?.[0] as { id: string } | undefined;
-
+    const profile = (profileResult.userProfiles as { id: string }[] | undefined)?.[0];
     if (profile) {
       await db.transact([
         tx.userProfiles[profile.id].update({
           isPro: true,
-          stripeCustomerId: session.customer as string,
-        }),
-      ]);
-    } else {
-      // Create profile with isPro if it doesn't exist yet
-      await db.transact([
-        tx.userProfiles[id()].update({
-          userId,
-          isPro: true,
-          currentStreak: 0,
-          longestStreak: 0,
-          totalWorkouts: 0,
-          stripeCustomerId: session.customer as string,
+          stripeCustomerId: customerId,
         }),
       ]);
     }
   }
 
+  // ── customer.subscription.deleted → revoke Pro ──────────────────────────────
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
     const customerId = subscription.customer as string;
 
-    const result = await db.query({
+    // Revoke via userSubscriptions
+    const subResult = await db.query({
+      userSubscriptions: { $: { where: { stripeCustomerId: customerId } } },
+    });
+    const existingSub = (subResult.userSubscriptions as { id: string }[] | undefined)?.[0];
+    if (existingSub) {
+      await db.transact([
+        tx.userSubscriptions[existingSub.id].update({
+          isPro: false,
+          cancelledAt: Date.now(),
+        }),
+      ]);
+    }
+
+    // Mirror on userProfile for display
+    const profileResult = await db.query({
       userProfiles: { $: { where: { stripeCustomerId: customerId } } },
     });
-
-    const profile = result.userProfiles?.[0] as { id: string } | undefined;
+    const profile = (profileResult.userProfiles as { id: string }[] | undefined)?.[0];
     if (profile) {
-      await db.transact([tx.userProfiles[profile.id].update({ isPro: false })]);
+      await db.transact([
+        tx.userProfiles[profile.id].update({ isPro: false }),
+      ]);
     }
   }
 

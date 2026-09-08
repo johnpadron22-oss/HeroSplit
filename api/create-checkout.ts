@@ -7,8 +7,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 const VALID_PLANS = new Set(["monthly", "annual"]);
+const ALLOWED_ORIGIN = process.env.FRONTEND_URL ?? "https://herosplit.vercel.app";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // ── CORS ────────────────────────────────────────────────────────────────────
+  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(204).end();
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -59,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${process.env.FRONTEND_URL}/?checkout=success`,
       cancel_url: `${process.env.FRONTEND_URL}/`,
-      metadata: { userId: userId.trim() },
+      metadata: { userId: userId.trim(), plan: plan as string },
       ...(email ? { customer_email: (email as string).trim().toLowerCase() } : {}),
     });
 
