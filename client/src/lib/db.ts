@@ -1,8 +1,6 @@
-import { init, id } from "@instantdb/react";
-import type { AppSchema } from "../../../instant.schema";
+// ── InstantDB → Supabase migration shim ──────────────────────────────────────
+// This file is intentionally left minimal. All data access now goes through
+// @/lib/supabase (client) or the service role key (server/API routes).
+// Remove this file once all component imports of "@/lib/db" have been updated.
 
-export const APP_ID = import.meta.env.VITE_INSTANT_APP_ID as string;
-
-export const db = init<AppSchema>({ appId: APP_ID });
-
-export { id };
+export {};

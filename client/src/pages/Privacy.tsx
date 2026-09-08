@@ -90,10 +90,10 @@ export default function Privacy() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 <tr>
-                  <td className="py-2.5 pr-4 font-medium text-foreground">InstantDB</td>
-                  <td className="py-2.5 pr-4">Real-time database storing all app data</td>
+                  <td className="py-2.5 pr-4 font-medium text-foreground">Supabase</td>
+                  <td className="py-2.5 pr-4">Postgres database and authentication</td>
                   <td className="py-2.5 pr-4">All profile, workout, subscription, and feedback data</td>
-                  <td className="py-2.5"><a href="https://www.instantdb.com/privacy" target="_blank" rel="noopener noreferrer" className="text-hero hover:underline">instantdb.com/privacy</a></td>
+                  <td className="py-2.5"><a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-hero hover:underline">supabase.com/privacy</a></td>
                 </tr>
                 <tr>
                   <td className="py-2.5 pr-4 font-medium text-foreground">Stripe</td>

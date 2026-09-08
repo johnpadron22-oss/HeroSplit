@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MessageSquarePlus, Sparkles, Bug, Dumbbell, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { db, id } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile } from "@/hooks/use-workouts";
 
@@ -58,7 +59,7 @@ interface FeedbackDialogProps {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function FeedbackDialog({ open, onOpenChange, profile }: FeedbackDialogProps) {
-  const { user } = db.useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [category, setCategory] = useState<CategoryId>("character");
   const [message, setMessage] = useState("");
@@ -71,17 +72,16 @@ export function FeedbackDialog({ open, onOpenChange, profile }: FeedbackDialogPr
     if (!user || !message.trim()) return;
     setIsPending(true);
     try {
-      await db.transact([
-        db.tx.feedback[id()].update({
-          userId: user.id,
-          category,
-          message: message.trim(),
-          submittedAt: Date.now(),
-          ...(profile?.path           ? { path: profile.path }                     : {}),
-          ...(profile?.archetype      ? { archetype: profile.archetype }           : {}),
-          ...(profile?.experienceLevel ? { experienceLevel: profile.experienceLevel } : {}),
-        }),
-      ]);
+      const { error } = await supabase.from("feedback").insert({
+        user_id:      user.id,
+        category,
+        message:      message.trim(),
+        submitted_at: Date.now(),
+        ...(profile?.path            ? { path: profile.path }                          : {}),
+        ...(profile?.archetype       ? { archetype: profile.archetype }                : {}),
+        ...(profile?.experienceLevel ? { experience_level: profile.experienceLevel }   : {}),
+      });
+      if (error) throw error;
       setSubmitted(true);
     } catch {
       toast({

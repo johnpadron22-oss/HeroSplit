@@ -1,34 +1,38 @@
-import { useEffect } from "react";
-import { db } from "@/lib/db";
-
-const REDIRECT_URL = `${window.location.origin}/landing`;
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 export function useAuth() {
-  const { user, isLoading } = db.useAuth();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Handle OAuth callback — exchange code for token when Google redirects back
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    if (!code) return;
+    // Get current session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
 
-    db.auth
-      .exchangeCodeForToken({ code, redirectURL: REDIRECT_URL })
-      .then(() => {
-        window.history.replaceState({}, "", window.location.pathname);
-      })
-      .catch(console.error);
+    // Listen for auth state changes (login, logout, token refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const loginWithGoogle = async () => {
-    const url = await db.auth.createAuthorizationURL({
-      clientName: "google-web2",
-      redirectURL: REDIRECT_URL,
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
     });
-    window.location.href = url;
   };
 
-  const logout = () => db.auth.signOut();
+  const logout = () => supabase.auth.signOut();
 
   return {
     user,

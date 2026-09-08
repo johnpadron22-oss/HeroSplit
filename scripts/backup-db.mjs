@@ -1,35 +1,22 @@
 #!/usr/bin/env node
 /**
- * HeroSplit Database Backup Script
+ * HeroSplit Database Backup Script (Supabase)
  *
- * Exports all data from InstantDB using the Admin SDK and writes it to a
- * timestamped JSON file in the ./backups/ directory.
+ * Exports all data from Supabase using the service role key and writes it to
+ * a timestamped JSON file in the ./backups/ directory.
  *
  * Usage:
  *   node scripts/backup-db.mjs
  *
  * Required env vars (can be in .env or set directly):
- *   INSTANT_APP_ID      — your InstantDB App ID
- *   INSTANT_ADMIN_TOKEN — your InstantDB Admin Token
+ *   SUPABASE_URL              — your Supabase project URL
+ *   SUPABASE_SERVICE_ROLE_KEY — service role key (bypasses RLS)
  *
  * Output:
  *   backups/herosplit-backup-YYYY-MM-DDTHH-mm-ss.json
- *
- * Each backup file contains:
- *   {
- *     "meta": { "exportedAt": ..., "appId": ..., "entities": [...] },
- *     "data": {
- *       "userSubscriptions": [...],
- *       "userProfiles": [...],
- *       "workoutLogs": [...],
- *       "achievements": [...],
- *       "feedback": [...],
- *       "workouts": [...]   // seeded data — optional to restore
- *     }
- *   }
  */
 
-import { init } from "@instantdb/admin";
+import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -39,22 +26,24 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKUP_DIR = path.join(__dirname, "..", "backups");
 
-const APP_ID      = process.env.INSTANT_APP_ID;
-const ADMIN_TOKEN = process.env.INSTANT_ADMIN_TOKEN;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!APP_ID)      { console.error("❌ INSTANT_APP_ID is required"); process.exit(1); }
-if (!ADMIN_TOKEN) { console.error("❌ INSTANT_ADMIN_TOKEN is required"); process.exit(1); }
+if (!SUPABASE_URL) { console.error("❌ SUPABASE_URL is required"); process.exit(1); }
+if (!SERVICE_KEY)  { console.error("❌ SUPABASE_SERVICE_ROLE_KEY is required"); process.exit(1); }
 
-const db = init({ appId: APP_ID, adminToken: ADMIN_TOKEN });
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+  auth: { persistSession: false },
+});
 
-// ── Entities to export ─────────────────────────────────────────────────────────
+// ── Tables to export ───────────────────────────────────────────────────────────
 
-// NOTE: workouts are seeded from scripts/seed-instant.mjs and can be re-seeded
+// workouts are seeded from scripts/seed-supabase.mjs and can be re-seeded
 // rather than restored from backup. They're included here for completeness.
-const ENTITIES = [
-  "userSubscriptions",
-  "userProfiles",
-  "workoutLogs",
+const TABLES = [
+  "user_subscriptions",
+  "user_profiles",
+  "workout_logs",
   "achievements",
   "feedback",
   "workouts",
@@ -62,35 +51,35 @@ const ENTITIES = [
 
 // ── Export ─────────────────────────────────────────────────────────────────────
 
-async function exportEntity(entity) {
-  // InstantDB admin SDK supports full table scans via query without filters
-  const result = await db.query({ [entity]: {} });
-  return result[entity] ?? [];
+async function exportTable(table) {
+  const { data, error } = await supabase.from(table).select("*");
+  if (error) throw error;
+  return data ?? [];
 }
 
 async function main() {
-  console.log("\n🗄️  HeroSplit Database Backup");
-  console.log(`   App ID: ${APP_ID}`);
-  console.log(`   Entities: ${ENTITIES.join(", ")}\n`);
+  console.log("\n🗄️  HeroSplit Database Backup (Supabase)");
+  console.log(`   URL:    ${SUPABASE_URL}`);
+  console.log(`   Tables: ${TABLES.join(", ")}\n`);
 
   const backup = {
     meta: {
       exportedAt: new Date().toISOString(),
-      appId: APP_ID,
-      entities: ENTITIES,
+      supabaseUrl: SUPABASE_URL,
+      tables: TABLES,
     },
     data: {},
   };
 
-  for (const entity of ENTITIES) {
-    process.stdout.write(`   Exporting ${entity}...`);
+  for (const table of TABLES) {
+    process.stdout.write(`   Exporting ${table}...`);
     try {
-      const rows = await exportEntity(entity);
-      backup.data[entity] = rows;
+      const rows = await exportTable(table);
+      backup.data[table] = rows;
       console.log(` ✅ ${rows.length} records`);
     } catch (err) {
       console.log(` ❌ Failed: ${err.message}`);
-      backup.data[entity] = { error: err.message };
+      backup.data[table] = { error: err.message };
     }
   }
 
