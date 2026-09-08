@@ -36,7 +36,7 @@ export interface WorkoutLog {
 export interface UserProfile {
   id: string;
   userId: string;
-  isPro: boolean;
+  isPro: boolean;       // display only — do NOT use for access gating
   currentStreak: number;
   longestStreak: number;
   totalWorkouts: number;
@@ -46,6 +46,18 @@ export interface UserProfile {
   archetype?: string;
   alias?: string;
   experienceLevel?: "beginner" | "intermediate" | "advanced" | "veteran";
+}
+
+// The authoritative, write-locked subscription record (only the Stripe
+// webhook can write this via the admin SDK — clients cannot self-grant Pro).
+export interface UserSubscription {
+  id: string;
+  userId: string;
+  isPro: boolean;
+  stripeCustomerId?: string;
+  plan?: "monthly" | "annual";
+  subscribedAt?: number;
+  cancelledAt?: number;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -196,9 +208,10 @@ export function useUserProgress() {
   const { data, isLoading } = db.useQuery(
     user
       ? {
-          workoutLogs: { $: { where: { userId: user.id } } },
-          achievements: { $: { where: { userId: user.id } } },
-          userProfiles: { $: { where: { userId: user.id } } },
+          workoutLogs:       { $: { where: { userId: user.id } } },
+          achievements:      { $: { where: { userId: user.id } } },
+          userProfiles:      { $: { where: { userId: user.id } } },
+          userSubscriptions: { $: { where: { userId: user.id } } },
         }
       : null
   );
@@ -209,7 +222,9 @@ export function useUserProgress() {
     achievementId: string;
     unlockedAt: number;
   }[];
-  const profile = (data?.userProfiles?.[0] ?? null) as UserProfile | null;
+  const profile      = (data?.userProfiles?.[0]      ?? null) as UserProfile      | null;
+  // Authoritative Pro gate — write-locked; only the Stripe webhook can set this.
+  const subscription = (data?.userSubscriptions?.[0] ?? null) as UserSubscription | null;
 
   // Live-computed streak (always accurate — resets if a day was missed)
   const computedStreak = computeStreak(logs);
@@ -229,7 +244,9 @@ export function useUserProgress() {
   return {
     data: {
       stats: {
-        isPro: profile?.isPro ?? false,
+        // isPro is sourced from userSubscriptions (write-locked, authoritative).
+        // Never use profile.isPro for access gating — it's for display only.
+        isPro: subscription?.isPro ?? false,
         currentStreak: computedStreak,
         longestStreak: profile?.longestStreak ?? 0,
         totalWorkouts: logs.length,
@@ -237,6 +254,7 @@ export function useUserProgress() {
       logs,
       achievements,
       profile,
+      subscription,
     },
     isLoading,
   };
@@ -281,13 +299,15 @@ export function useUpgradePro() {
 export const useTogglePro = useUpgradePro;
 
 // ── Quick Pro check (lightweight — avoids pulling full progress) ──────────────
+// Reads from userSubscriptions (write-locked to admin SDK only — the
+// authoritative source). Never reads from userProfiles.isPro for gating.
 
 export function useIsPro(): boolean {
   const { user } = db.useAuth();
   const { data } = db.useQuery(
-    user ? { userProfiles: { $: { where: { userId: user.id } } } } : null
+    user ? { userSubscriptions: { $: { where: { userId: user.id } } } } : null
   );
-  return (data?.userProfiles?.[0] as UserProfile | undefined)?.isPro ?? false;
+  return (data?.userSubscriptions?.[0] as UserSubscription | undefined)?.isPro ?? false;
 }
 
 // ── Billing Portal ────────────────────────────────────────────────────────────

@@ -488,7 +488,7 @@ export default function Home() {
                 </div>
 
                 {/* Subscription management — Pro users only */}
-                {isPro && progress?.profile?.stripeCustomerId && (
+                {isPro && progress?.subscription?.stripeCustomerId && (
                   <div className="bg-card border border-purple-500/20 p-5 rounded-2xl flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
@@ -503,7 +503,7 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       className="shrink-0 border-purple-500/30 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                      onClick={() => openPortal(progress.profile!.stripeCustomerId!)}
+                      onClick={() => openPortal(progress.subscription!.stripeCustomerId!)}
                       disabled={portalPending}
                     >
                       {portalPending
