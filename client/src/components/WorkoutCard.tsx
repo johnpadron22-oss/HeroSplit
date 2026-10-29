@@ -98,11 +98,11 @@ export function WorkoutCard({ workout, isLocked = false, onUnlock, experienceLev
         <div className="flex items-center gap-4 text-xs text-muted-foreground mb-5">
           <div className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
-            <span>{(workout.program as any).duration || "30–45"} min</span>
+            <span>{workout.estDuration || "30–45"} min</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5" />
-            <span>{(workout.program as any).exercises?.length ?? 5} exercises</span>
+            <span>{workout.exerciseCount || 5} exercises</span>
           </div>
         </div>
 

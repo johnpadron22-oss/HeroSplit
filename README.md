@@ -37,35 +37,24 @@
 | Backend | Node.js + Express 5 |
 | Database | PostgreSQL + Drizzle ORM |
 | Auth | Supabase Auth (JWT) |
-| Build | Vite + esbuild |
+| Build | Vite |
 
 ## Getting Started
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server (requires PostgreSQL running)
-npm run dev
-
-# Type check
-npm run check
-
-# Push schema to database
-npm run db:push
+npm run dev          # frontend only (Vite)
+npx vercel dev       # frontend + api/ serverless functions
+npm run check        # TypeScript
+npm test             # API security tests (Vitest)
+npm run test:rls     # database RLS tests against a throwaway local Postgres
 ```
 
-The dev server starts on `http://localhost:5000`.
+Database: apply `supabase/schema.sql`, then every file in `supabase/migrations/` in order, in the Supabase SQL Editor. See [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Environment Variables
 
-```env
-DATABASE_URL=postgresql://...
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SECRET_KEY=sb_secret_...
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-```
+See `.env.example`. Only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` reach the browser. Everything else (`SUPABASE_SERVICE_ROLE_KEY`, Stripe keys, `FRONTEND_URL`) is server-only and must be set per environment in Vercel. Preview deployments must use Stripe **test** keys; the API refuses live keys outside production.
 
 ## License
 

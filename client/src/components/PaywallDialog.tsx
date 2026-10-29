@@ -108,8 +108,13 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
             )}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Secured by Stripe · Cancel anytime
+          <p className="text-xs text-center text-muted-foreground leading-relaxed">
+            {selected === "annual"
+              ? "You'll be charged $39.99 today. Your subscription renews automatically every year at $39.99 until you cancel."
+              : "You'll be charged $4.99 today. Your subscription renews automatically every month at $4.99 until you cancel."}{" "}
+            Cancel anytime from your profile (Pro Subscription → Manage); you keep Pro until the end of the period you paid for.
+            Prices in USD, plus any applicable tax. Payments are processed by Stripe. See our{" "}
+            <a href="/terms" className="underline">Terms</a> and <a href="/privacy" className="underline">Privacy Policy</a>.
           </p>
         </div>
       </DialogContent>

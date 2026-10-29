@@ -1,78 +1,49 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import Stripe from "stripe";
-import { checkRateLimit, getClientIp } from "./_rateLimit";
+import type { VercelRequest, VercelResponse } from "./_lib/vercel.js";
+import { z } from "zod";
+import { frontendUrl, getAdmin, getStripe, ConfigError } from "./_lib/deps.js";
+import { applyCors, clientIp, HttpError, parseBody, requireMethod, sendError } from "./_lib/http.js";
+import { requireUser } from "./_lib/auth.js";
+import { enforceRateLimit } from "./_lib/rateLimit.js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-07-29.dahlia",
-});
-
-const VALID_PLANS = new Set(["monthly", "annual"]);
-const ALLOWED_ORIGIN = process.env.FRONTEND_URL ?? "https://herosplit.vercel.app";
+const Body = z.object({ plan: z.enum(["monthly", "annual"]) }).strict();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // ── CORS ────────────────────────────────────────────────────────────────────
-  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(204).end();
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // ── Rate limit: 5 checkout attempts per IP per minute ───────────────────────
-  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
-  const { allowed, remaining } = checkRateLimit(ip, 5, 60_000);
-  res.setHeader("X-RateLimit-Remaining", remaining);
-  if (!allowed) {
-    return res.status(429).json({ error: "Too many requests. Please wait a moment." });
-  }
-
-  // ── Input validation ─────────────────────────────────────────────────────────
-  const { userId, email, plan = "monthly" } = req.body as {
-    userId?: unknown;
-    email?: unknown;
-    plan?: unknown;
-  };
-
-  if (!userId || typeof userId !== "string" || userId.trim().length === 0 || userId.length > 128) {
-    return res.status(400).json({ error: "Invalid userId" });
-  }
-  if (!VALID_PLANS.has(plan as string)) {
-    return res.status(400).json({ error: "Invalid plan. Must be 'monthly' or 'annual'." });
-  }
-  if (email !== undefined && (typeof email !== "string" || email.length > 254)) {
-    return res.status(400).json({ error: "Invalid email" });
-  }
-
-  // ── Env guards ───────────────────────────────────────────────────────────────
-  const priceId =
-    plan === "annual"
-      ? process.env.STRIPE_PRO_ANNUAL_PRICE_ID
-      : process.env.STRIPE_PRO_PRICE_ID;
-
-  if (!priceId) {
-    return res.status(500).json({ error: `Missing price ID for plan: ${plan}` });
-  }
-  if (!process.env.STRIPE_SECRET_KEY) {
-    return res.status(500).json({ error: "Stripe not configured" });
-  }
-
-  // ── Create checkout ──────────────────────────────────────────────────────────
+  if (applyCors(req, res, ["POST"])) return;
   try {
-    const session = await stripe.checkout.sessions.create({
+    requireMethod(req, ["POST"]);
+    await enforceRateLimit("checkout-ip", clientIp(req), 10, 60);
+    const user = await requireUser(req);
+    await enforceRateLimit("checkout-user", user.id, 5, 60);
+    const { plan } = parseBody(req, Body);
+
+    const priceId = plan === "annual" ? process.env.STRIPE_PRO_ANNUAL_PRICE_ID : process.env.STRIPE_PRO_PRICE_ID;
+    if (!priceId) throw new ConfigError(`Missing price for ${plan}`);
+
+    // Ownership and Pro state come from the database, never from the request.
+    const { data: sub, error } = await getAdmin()
+      .from("user_subscriptions")
+      .select("is_pro, stripe_customer_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (sub?.is_pro) throw new HttpError(409, "You already have Pro");
+
+    const base = frontendUrl();
+    const session = await getStripe().checkout.sessions.create({
       mode: "subscription",
-      payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.FRONTEND_URL}/?checkout=success`,
-      cancel_url: `${process.env.FRONTEND_URL}/`,
-      metadata: { userId: userId.trim(), plan: plan as string },
-      ...(email ? { customer_email: (email as string).trim().toLowerCase() } : {}),
+      success_url: `${base}/?checkout=success`,
+      cancel_url: `${base}/`,
+      client_reference_id: user.id,
+      metadata: { userId: user.id, plan },
+      subscription_data: { metadata: { userId: user.id, plan } },
+      ...(sub?.stripe_customer_id
+        ? { customer: sub.stripe_customer_id }
+        : user.email ? { customer_email: user.email } : {}),
     });
 
-    return res.json({ url: session.url });
-  } catch (err: any) {
-    console.error("Stripe checkout error:", err?.message ?? err);
-    return res.status(500).json({ error: "Failed to create checkout session" });
+    return res.status(200).json({ url: session.url });
+  } catch (err) {
+    return sendError(res, "create-checkout", err);
   }
 }

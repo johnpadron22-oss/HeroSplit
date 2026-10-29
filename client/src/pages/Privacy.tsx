@@ -121,7 +121,7 @@ export default function Privacy() {
 
           <h2>4. Data Retention</h2>
           <p>
-            We retain your account and workout data for as long as your account is active. If you request deletion of your account, we will delete your personal data within 30 days, except where retention is required by law (e.g., billing records may be kept for up to 7 years for tax and legal compliance). Anonymized or aggregated data (with no personal identifiers) may be retained indefinitely for product improvement purposes.
+            We retain your account and workout data for as long as your account is active. You can delete your account at any time from your Profile ("Delete account"): this immediately erases your profile, workout logs, achievements and feedback, cancels any subscription, and removes your sign-in. If you instead request deletion by email, we will delete your personal data within 30 days, except where retention is required by law (e.g., billing records may be kept for up to 7 years for tax and legal compliance). Anonymized or aggregated data (with no personal identifiers) may be retained indefinitely for product improvement purposes.
           </p>
 
           <h2>5. Your Rights (General)</h2>
@@ -129,7 +129,7 @@ export default function Privacy() {
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Access:</strong> request a copy of the data we hold about you.</li>
             <li><strong>Correction:</strong> request that we correct inaccurate data.</li>
-            <li><strong>Deletion:</strong> request that we delete your account and associated data.</li>
+            <li><strong>Deletion:</strong> delete your account and associated data yourself from your Profile, or ask us to.</li>
             <li><strong>Portability:</strong> request your workout history in a machine-readable format.</li>
             <li><strong>Objection:</strong> object to any processing of your data.</li>
           </ul>
@@ -190,7 +190,7 @@ export default function Privacy() {
 
           <h2>9. Data Security</h2>
           <p>
-            We use industry-standard measures to protect your data: HTTPS for all data in transit, server-side input validation on all API endpoints, rate limiting to prevent abuse, and InstantDB's permission system to ensure users can only access their own data. Subscription status is write-locked to our server-side Stripe webhook — clients cannot modify it. No payment card data is stored on our servers — Stripe handles all payment processing.
+            We use industry-standard measures to protect your data: HTTPS for all data in transit, server-side input validation on all API endpoints, rate limiting to prevent abuse, and database row-level security (Supabase) so that each user can only access their own data. Subscription status is write-locked to our server-side Stripe webhook — clients cannot modify it. No payment card data is stored on our servers — Stripe handles all payment processing.
           </p>
           <p>
             No system is 100% secure. In the event of a data breach affecting your personal data, we will notify you by email within 72 hours of becoming aware of it (as required by GDPR Art. 33/34 and applicable US state breach notification laws).

@@ -42,9 +42,6 @@ function weightedRandom(pool: LootItem[]): LootItem {
   const weights = { common: 55, rare: 30, epic: 12, legendary: 3 };
   const total = Object.values(weights).reduce((a, b) => a + b, 0);
   let rand = Math.random() * total;
-  const rarities = (["legendary", "epic", "rare", "common"] as const).sort(
-    (a, b) => weights[a] - weights[b]
-  );
   // Pick rarity
   const rarityWeights = (["common", "rare", "epic", "legendary"] as const);
   let picked: LootItem["rarity"] = "common";
