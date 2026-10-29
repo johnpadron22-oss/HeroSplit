@@ -68,6 +68,22 @@ select pg_temp.expect_error($q$select public.hit_rate_limit('k', 1, 60)$q$,'4250
 select pg_temp.expect_error($q$select public.delete_user_data('11111111-1111-1111-1111-111111111111')$q$, '42501', 'anon cannot call delete_user_data');
 reset role;
 
+-- Legacy tables (exist only on projects created by the old Drizzle schema)
+create function pg_temp.check_legacy(p_role text, p_claims text) returns void language plpgsql as $$
+declare t text;
+begin
+  foreach t in array array['users', 'sessions', 'user_settings'] loop
+    if to_regclass('public.' || t) is not null then
+      perform set_config('request.jwt.claims', p_claims, true);
+      execute format('set local role %I', p_role);
+      perform pg_temp.expect_error(format('select * from public.%I', t), '42501', p_role || ' cannot read legacy table ' || t);
+      execute 'reset role';
+    end if;
+  end loop;
+end $$;
+select pg_temp.check_legacy('anon', '{"role":"anon"}');
+select pg_temp.check_legacy('authenticated', '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}');
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- (b) USER A
 -- ════════════════════════════════════════════════════════════════════════════
@@ -133,18 +149,18 @@ select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-2222222
 set role authenticated;
 
 insert into public.user_profiles (alias) values ('Bravo');
-select pg_temp.expect_eq($q$select count(*) from public.workout_logs where id = current_setting('test.a_log')::uuid$q$, '0', 'B cannot read A log by exact id');
+select pg_temp.expect_eq($q$select count(*) from public.workout_logs where id::text = current_setting('test.a_log')$q$, '0', 'B cannot read A log by exact id');
 select pg_temp.expect_eq($q$select count(*) from public.workout_logs$q$,  '0', 'B sees no logs of A');
-select pg_temp.expect_eq($q$select count(*) from public.user_profiles where id = current_setting('test.a_profile')::uuid$q$, '0', 'B cannot read A profile by exact id');
+select pg_temp.expect_eq($q$select count(*) from public.user_profiles where id::text = current_setting('test.a_profile')$q$, '0', 'B cannot read A profile by exact id');
 select pg_temp.expect_eq($q$select count(*) from public.user_profiles$q$, '1', 'B sees only own profile');
 select pg_temp.expect_eq($q$select count(*) from public.feedback$q$,      '0', 'B sees none of A feedback');
-select pg_temp.expect_eq($q$with u as (update public.user_profiles set alias = 'pwned' where id = current_setting('test.a_profile')::uuid returning 1) select count(*) from u$q$, '0', 'B cannot update A profile');
-select pg_temp.expect_eq($q$with d as (delete from public.workout_logs where id = current_setting('test.a_log')::uuid returning 1) select count(*) from d$q$, '0', 'B cannot delete A log');
+select pg_temp.expect_eq($q$with u as (update public.user_profiles set alias = 'pwned' where id::text = current_setting('test.a_profile') returning 1) select count(*) from u$q$, '0', 'B cannot update A profile');
+select pg_temp.expect_eq($q$with d as (delete from public.workout_logs where id::text = current_setting('test.a_log') returning 1) select count(*) from d$q$, '0', 'B cannot delete A log');
 select pg_temp.expect_eq($q$select count(*) from public.user_subscriptions$q$, '0', 'B cannot read others subscriptions');
 reset role;
 
-select pg_temp.expect_eq($q$select alias from public.user_profiles where id = current_setting('test.a_profile')::uuid$q$, 'Alpha2', 'A profile unchanged after B attack');
-select pg_temp.expect_eq($q$select count(*) from public.workout_logs where id = current_setting('test.a_log')::uuid$q$, '1', 'A log still exists after B attack');
+select pg_temp.expect_eq($q$select alias from public.user_profiles where id::text = current_setting('test.a_profile')$q$, 'Alpha2', 'A profile unchanged after B attack');
+select pg_temp.expect_eq($q$select count(*) from public.workout_logs where id::text = current_setting('test.a_log')$q$, '1', 'A log still exists after B attack');
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- (d) PRO USER C
@@ -173,6 +189,8 @@ reset role;
 select pg_temp.expect_eq($q$select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
                             where n.nspname = 'public' and c.relkind in ('r','p') and not c.relrowsecurity$q$,
                          '0', 'every public table has RLS enabled');
+select pg_temp.expect_eq($q$select relrowsecurity::text from pg_class where oid = 'private.rate_limits'::regclass$q$,
+                         'true', 'private.rate_limits has RLS enabled');
 
 do $$ begin
   if current_setting('test.failures')::int > 0 then
