@@ -154,6 +154,16 @@ grant select, delete on public.workout_logs to authenticated;
 grant insert (workout_id, workout_name, date, duration, xp_earned, sets_data)
   on public.workout_logs to authenticated;
 
+-- Projects created by the old Drizzle schema use a serial id here; inserting
+-- needs USAGE on that one sequence (no-op where the id is a uuid).
+do $$
+declare seq text := pg_get_serial_sequence('public.workout_logs', 'id');
+begin
+  if seq is not null then
+    execute format('grant usage on sequence %s to authenticated', seq);
+  end if;
+end $$;
+
 alter table public.workout_logs
   drop constraint if exists workout_logs_name_len,
   drop constraint if exists workout_logs_duration_range,
