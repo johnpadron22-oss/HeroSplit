@@ -7,9 +7,10 @@ vite.config.ts.*
 .vercel
 .env
 .env.local
+.env*
 .local/
 .claude/
+.claude-flow/
 *.zip
 client_secret_*.json
 *.pdf
-.env*
