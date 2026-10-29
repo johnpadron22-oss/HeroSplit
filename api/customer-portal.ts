@@ -1,58 +1,36 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import Stripe from "stripe";
-import { checkRateLimit, getClientIp } from "./_rateLimit";
+import type { VercelRequest, VercelResponse } from "./_lib/vercel.js";
+import { z } from "zod";
+import { frontendUrl, getAdmin, getStripe } from "./_lib/deps.js";
+import { applyCors, clientIp, HttpError, parseBody, requireMethod, sendError } from "./_lib/http.js";
+import { requireUser } from "./_lib/auth.js";
+import { enforceRateLimit } from "./_lib/rateLimit.js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-07-29.dahlia",
-});
-
-const ALLOWED_ORIGIN = process.env.FRONTEND_URL ?? "https://herosplit.vercel.app";
+// No fields accepted: the Stripe customer is looked up from the signed-in user.
+const Body = z.object({}).strict();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // ── CORS ────────────────────────────────────────────────────────────────────
-  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(204).end();
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // ── Rate limit: 10 portal requests per IP per minute ────────────────────────
-  const ip = getClientIp(req.headers as Record<string, string | string[] | undefined>);
-  const { allowed, remaining } = checkRateLimit(ip, 10, 60_000);
-  res.setHeader("X-RateLimit-Remaining", remaining);
-  if (!allowed) {
-    return res.status(429).json({ error: "Too many requests. Please wait a moment." });
-  }
-
-  // ── Input validation ─────────────────────────────────────────────────────────
-  const { customerId } = req.body as { customerId?: unknown };
-
-  if (
-    !customerId ||
-    typeof customerId !== "string" ||
-    !customerId.startsWith("cus_") ||
-    customerId.length > 64
-  ) {
-    return res.status(400).json({ error: "Invalid customerId" });
-  }
-
-  if (!process.env.STRIPE_SECRET_KEY) {
-    return res.status(500).json({ error: "Stripe not configured" });
-  }
-
-  // ── Create portal session ────────────────────────────────────────────────────
+  if (applyCors(req, res, ["POST"])) return;
   try {
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: process.env.FRONTEND_URL ?? "https://herosplit.vercel.app",
-    });
+    requireMethod(req, ["POST"]);
+    await enforceRateLimit("portal-ip", clientIp(req), 20, 60);
+    const user = await requireUser(req);
+    await enforceRateLimit("portal-user", user.id, 10, 60);
+    parseBody(req, Body);
 
-    return res.json({ url: session.url });
-  } catch (err: any) {
-    console.error("Stripe portal error:", err?.message ?? err);
-    return res.status(500).json({ error: "Failed to create billing portal session" });
+    const { data: sub, error } = await getAdmin()
+      .from("user_subscriptions")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!sub?.stripe_customer_id) throw new HttpError(404, "No billing account found");
+
+    const session = await getStripe().billingPortal.sessions.create({
+      customer: sub.stripe_customer_id,
+      return_url: `${frontendUrl()}/`,
+    });
+    return res.status(200).json({ url: session.url });
+  } catch (err) {
+    return sendError(res, "customer-portal", err);
   }
 }

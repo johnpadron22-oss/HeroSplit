@@ -14,3 +14,4 @@ vite.config.ts.*
 *.zip
 client_secret_*.json
 *.pdf
+backups/

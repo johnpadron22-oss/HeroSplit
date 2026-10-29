@@ -6,83 +6,87 @@ HeroSplit is a superhero-themed fitness app. Users browse hero and villain worko
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18 + TypeScript + Wouter (routing) |
+| Frontend | React 18 + TypeScript + Wouter (routing), built with Vite |
 | State | TanStack React Query (server state) |
 | UI | Tailwind CSS + shadcn/ui (Radix UI, New York style) |
 | Animations | Framer Motion |
-| Backend | Node.js + Express 5 |
-| Database | PostgreSQL + Drizzle ORM |
-| Auth | Supabase Auth (JWT) — `server/auth.ts` middleware |
-| Build | Vite (client) + esbuild (server) |
+| Data | Supabase Postgres, queried from the browser with supabase-js under RLS |
+| Server code | Vercel serverless functions in `api/` (Stripe + account deletion only) |
+| Auth | Supabase Auth (Google OAuth, PKCE) |
+| Payments | Stripe Checkout + Billing Portal + webhook |
 
 ## Directory Structure
 
 ```
 client/src/
-  pages/          — Route-level page components (Landing, Home, WorkoutView)
+  pages/          — Route-level page components (Landing, Home, WorkoutView, Privacy, Terms)
   components/     — Shared UI components
     ui/           — shadcn/ui primitives — do NOT modify these directly
-  hooks/          — Custom React hooks (useAuth, useWorkouts, useMobile, etc.)
-  lib/            — queryClient, utils (cn()), auth-utils
+  hooks/          — useAuth, useWorkouts (all Supabase queries + API calls), etc.
+  lib/            — supabase client, queryClient, utils (cn())
 
-server/
-  index.ts        — Express app entry point + middleware
-  routes.ts       — All API route handlers
-  storage.ts      — All database queries (single data access layer)
-  db.ts           — Drizzle ORM connection
-  vite.ts         — Dev server integration
-
-shared/
-  schema.ts       — Drizzle table definitions + inferred TS types
-  routes.ts       — Zod schemas for all API request/response shapes
+api/              — Vercel functions (each non-underscore file is a public route)
+  _lib/           — auth (JWT verify), http (CORS, zod parsing, safe errors), rateLimit, deps
+supabase/
+  schema.sql      — base tables
+  migrations/     — security hardening (RLS, grants, triggers) — apply in order
+  tests/          — RLS test suite (anon / user A / user B / Pro / service_role)
+tests/api/        — Vitest tests for api/ routes
 ```
+
+## Security Rules (do not regress)
+
+- Every table has RLS. API roles get explicit column grants, never `ALL`. See `docs/SECURITY.md`.
+- Never send `user_id` from the browser; the database sets it from `auth.uid()`.
+- Profile stats (XP, streaks, totals) are computed by a DB trigger — never written by the client.
+- Pro gating is `user_subscriptions` (written only by the Stripe webhook). Pro workout programs are only returned by `get_workout()`.
+- `SUPABASE_SERVICE_ROLE_KEY` is server-only (`api/`). Only `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` may reach the browser.
+- API routes: `requireUser()` first, strict zod body, rate limit, `sendError()` for every failure.
+- Never disable RLS, widen grants, or use CORS `*` to fix an error — fix the policy/grant instead.
 
 ## Core Patterns
 
-### Adding a new API endpoint (full-stack example)
-1. Define Zod schemas in `shared/routes.ts`
-2. Add a storage method in `server/storage.ts` using Drizzle
-3. Register the Express route in `server/routes.ts`
-4. Call from the client with React Query + a custom hook in `client/src/hooks/`
+### Adding a new API endpoint
+1. Create `api/my-route.ts` using `applyCors`, `requireMethod`, `enforceRateLimit`, `requireUser`, `parseBody` (strict zod) and `sendError` from `api/_lib/`
+2. Add tests in `tests/api/`
+3. Call it from a hook with the Bearer token (see `callApi` in `client/src/hooks/use-workouts.ts`)
 
 ### Adding a new page
 1. Create `client/src/pages/MyPage.tsx`
-2. Register the route in `client/src/main.tsx` using Wouter `<Route>`
-3. Use `useAuth()` for auth guards
+2. Register the route in `client/src/App.tsx` using Wouter `<Route>`
+3. Use `useAuth()` for auth guards (UI only — the database enforces access)
 
 ### Adding a database table
-1. Define the table in `shared/schema.ts` using `pgTable`
-2. Run `npm run db:push` to sync the schema
+1. Add a new file in `supabase/migrations/` that creates the table, enables RLS, adds own-row policies and explicit grants
+2. Add cases to `supabase/tests/rls_test.sql`, run `npm run test:rls`
 
 ## Database Schema
 
-| Table | Key Columns |
-|-------|------------|
-| `users` | id, username, email, profileImageUrl, createdAt |
-| `sessions` | Legacy table — auth is now JWT-based via Supabase |
-| `workouts` | id, slug, name, type (hero/villain/custom), difficulty, isPro, program (JSON), equipment (JSON) |
-| `workout_logs` | id, userId, workoutName, date, duration, exercises (JSON), completedAt |
-| `achievements` | id, userId, achievementId, unlockedAt |
-| `user_settings` | userId, isPro, currentStreak, longestStreak, totalWorkouts |
+| Table | Client access |
+|-------|---------------|
+| `workouts` | read catalog columns; `program` only via `get_workout(slug)` |
+| `workout_logs` | read/insert/delete own; insert validated + max 30/day |
+| `achievements` | read own |
+| `feedback` | read/insert own; max 5/hour |
+| `user_profiles` | read own; insert/update only path, archetype, alias, experience_level |
+| `user_subscriptions` | read own (written only by Stripe webhook) |
 
 ## API Routes
 
 ```
-GET  /api/workouts              List workouts (optional ?type= filter)
-GET  /api/workouts/:slug        Get a specific workout
-POST /api/workouts              Create workout (admin/seed)
-GET  /api/logs                  User workout logs (auth required)
-POST /api/logs                  Log a completed workout (auth required)
-GET  /api/user/progress         User stats + achievements (auth required)
-POST /api/user/pro              Toggle Pro status (auth required)
+POST /api/create-checkout     { plan: "monthly" | "annual" }   (auth)
+POST /api/customer-portal     {}                               (auth)
+POST /api/delete-account      { confirm: "DELETE MY ACCOUNT" } (auth)
+POST /api/stripe-webhook      Stripe-signed events only
 ```
 
 ## Development Commands
 
 ```bash
-npm run dev          # Start full-stack dev server on port 5000
+npm run dev          # Vite dev server (frontend); `npx vercel dev` to include api/
 npm run check        # TypeScript type check (run this before shipping)
-npm run db:push      # Push schema changes to the database
+npm test             # API security tests
+npm run test:rls     # RLS tests on a throwaway local Postgres
 npm run build        # Production build
 ```
 
@@ -99,7 +103,7 @@ npm run build        # Production build
 
 - All files are TypeScript with strict mode — no `any`
 - Validate all external data with Zod
-- Business logic lives in `server/storage.ts`, not in route handlers
+- Access control lives in the database (RLS + grants) and `api/_lib`, never only in the UI
 - Use React Query for server state — avoid `useState` for data that comes from the API
 - Use `cn()` from `client/src/lib/utils.ts` for conditional class names
 - Never modify files in `components/ui/` — extend via composition

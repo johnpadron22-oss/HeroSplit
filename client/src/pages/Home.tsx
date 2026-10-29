@@ -8,6 +8,7 @@ import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
+import { DeleteAccountCard } from "@/components/DeleteAccountCard";
 import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -59,14 +60,8 @@ export default function Home() {
   useEffect(() => {
     if (!user || loadingProgress) return;
     if (!progress?.profile) {
-      supabase.from("user_profiles").insert({
-        user_id:        user.id,
-        is_pro:         false,
-        current_streak: 0,
-        longest_streak: 0,
-        total_workouts: 0,
-        total_xp:       0,
-      }).then(() => {
+      // Owner and stats are set by the database; the client only creates the row.
+      supabase.from("user_profiles").insert({ alias: null }).then(() => {
         queryClient.invalidateQueries({ queryKey: ["userProgress"] });
       });
     }
@@ -507,7 +502,7 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       className="shrink-0 border-purple-500/30 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                      onClick={() => openPortal(progress.subscription!.stripeCustomerId!)}
+                      onClick={() => openPortal()}
                       disabled={portalPending}
                     >
                       {portalPending
@@ -516,6 +511,8 @@ export default function Home() {
                     </Button>
                   </div>
                 )}
+
+                <DeleteAccountCard />
 
                 {/* Feedback card */}
                 <div className="bg-gradient-to-r from-purple-950/40 to-cyan-950/40 border border-white/10 p-5 rounded-2xl flex items-center justify-between gap-4">

@@ -73,10 +73,8 @@ export function FeedbackDialog({ open, onOpenChange, profile }: FeedbackDialogPr
     setIsPending(true);
     try {
       const { error } = await supabase.from("feedback").insert({
-        user_id:      user.id,
         category,
-        message:      message.trim(),
-        submitted_at: Date.now(),
+        message:      message.trim().slice(0, 2000),
         ...(profile?.path            ? { path: profile.path }                          : {}),
         ...(profile?.archetype       ? { archetype: profile.archetype }                : {}),
         ...(profile?.experienceLevel ? { experience_level: profile.experienceLevel }   : {}),
