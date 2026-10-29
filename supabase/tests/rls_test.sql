@@ -173,6 +173,8 @@ reset role;
 select pg_temp.expect_eq($q$select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
                             where n.nspname = 'public' and c.relkind in ('r','p') and not c.relrowsecurity$q$,
                          '0', 'every public table has RLS enabled');
+select pg_temp.expect_eq($q$select relrowsecurity::text from pg_class where oid = 'private.rate_limits'::regclass$q$,
+                         'true', 'private.rate_limits has RLS enabled');
 
 do $$ begin
   if current_setting('test.failures')::int > 0 then
