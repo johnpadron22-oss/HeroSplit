@@ -4,6 +4,13 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+.vercel
 .env
 .env.local
+.env*
+.local/
+.claude/
 .claude-flow/
+*.zip
+client_secret_*.json
+*.pdf

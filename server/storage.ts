@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, isNotNull } from "drizzle-orm";
 import { 
   workouts, workoutLogs, achievements, userSettings,
   type Workout, type InsertWorkout,
@@ -32,6 +32,9 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // Workouts
   async getWorkouts(type?: string): Promise<Workout[]> {
+    if (type === 'anime') {
+      return await db.select().from(workouts).where(isNotNull(workouts.series));
+    }
     if (type) {
       return await db.select().from(workouts).where(eq(workouts.type, type));
     }

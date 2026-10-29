@@ -1,14 +1,29 @@
 import type { Express } from "express";
+import passport from "passport";
 import { authStorage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
 
-// Register auth-specific routes
 export function registerAuthRoutes(app: Express): void {
-  // Get current authenticated user
+  app.get("/api/login", passport.authenticate("google", {
+    scope: ["profile", "email"],
+  }));
+
+  app.get("/api/callback",
+    passport.authenticate("google", {
+      successRedirect: "/",
+      failureRedirect: "/",
+    })
+  );
+
+  app.get("/api/logout", (req, res) => {
+    req.logout(() => {
+      res.redirect("/");
+    });
+  });
+
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await authStorage.getUser(userId);
+      const user = await authStorage.getUser(req.user.id);
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);

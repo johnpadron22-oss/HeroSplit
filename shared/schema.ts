@@ -21,6 +21,8 @@ export const workouts = pgTable("workouts", {
   imageUrl: text("image_url"),
   avatarEmoji: text("avatar_emoji"), // Added for character avatar
   equipment: text("equipment"), // e.g. 'Full Gym', 'Bodyweight'
+  series: text("series"), // e.g. 'Dragon Ball Z', 'Naruto'
+  workoutStyle: text("workout_style"), // e.g. 'Strength', 'Calisthenics', 'HIIT'
   isPro: boolean("is_pro").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
