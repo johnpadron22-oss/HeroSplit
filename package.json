@@ -8,9 +8,14 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "mobile:build": "vite build && cap sync"
   },
   "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/cli": "8.6.0",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/ios": "8.6.0",
     "@hookform/resolvers": "^3.10.0",
     "@instantdb/admin": "^1.0.65",
     "@instantdb/react": "^1.0.65",
