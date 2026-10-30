@@ -1,19 +1,17 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Stripe from "stripe";
-import { init, id, tx } from "@instantdb/admin";
+import { createClient } from "@supabase/supabase-js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-07-29.dahlia",
 });
 
-const db = init({
-  appId: process.env.INSTANT_APP_ID!,
-  adminToken: process.env.INSTANT_ADMIN_TOKEN!,
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-export const config = {
-  api: { bodyParser: false },
-};
+export const config = { api: { bodyParser: false } };
 
 async function getRawBody(req: VercelRequest): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -25,20 +23,14 @@ async function getRawBody(req: VercelRequest): Promise<Buffer> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const sig = req.headers["stripe-signature"] as string;
   const rawBody = await getRawBody(req);
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(
-      rawBody,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET!);
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${(err as Error).message}`);
   }
@@ -48,47 +40,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const userId = session.metadata?.userId;
     if (!userId) return res.json({ received: true });
 
-    // Find the user's profile in InstantDB
-    const result = await db.query({
-      userProfiles: { $: { where: { userId } } },
-    });
+    const { data: rows } = await supabase
+      .from("user_profiles")
+      .select("id")
+      .eq("user_id", userId);
 
-    const profile = result.userProfiles?.[0] as { id: string } | undefined;
-
-    if (profile) {
-      await db.transact([
-        tx.userProfiles[profile.id].update({
-          isPro: true,
-          stripeCustomerId: session.customer as string,
-        }),
-      ]);
+    if (rows && rows.length > 0) {
+      await supabase.from("user_profiles").update({
+        is_pro: true,
+        stripe_customer_id: session.customer as string,
+      }).eq("user_id", userId);
     } else {
-      // Create profile with isPro if it doesn't exist yet
-      await db.transact([
-        tx.userProfiles[id()].update({
-          userId,
-          isPro: true,
-          currentStreak: 0,
-          longestStreak: 0,
-          totalWorkouts: 0,
-          stripeCustomerId: session.customer as string,
-        }),
-      ]);
+      await supabase.from("user_profiles").insert({
+        user_id: userId,
+        is_pro: true,
+        current_streak: 0,
+        longest_streak: 0,
+        total_workouts: 0,
+        total_xp: 0,
+        stripe_customer_id: session.customer as string,
+      });
     }
   }
 
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
     const customerId = subscription.customer as string;
-
-    const result = await db.query({
-      userProfiles: { $: { where: { stripeCustomerId: customerId } } },
-    });
-
-    const profile = result.userProfiles?.[0] as { id: string } | undefined;
-    if (profile) {
-      await db.transact([tx.userProfiles[profile.id].update({ isPro: false })]);
-    }
+    await supabase.from("user_profiles").update({ is_pro: false })
+      .eq("stripe_customer_id", customerId);
   }
 
   return res.json({ received: true });

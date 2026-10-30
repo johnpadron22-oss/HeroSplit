@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { db } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import type { UserProfile } from "@/hooks/use-workouts";
 
 // ── Archetype Data ────────────────────────────────────────────────────────────
@@ -217,14 +217,13 @@ export function OnboardingModal({ profile, defaultAlias, onComplete }: Onboardin
   const handleSave = async () => {
     if (!path || !chosen || !alias.trim()) return;
     setSaving(true);
-    await db.transact([
-      db.tx.userProfiles[profile.id].update({
-        path,
-        archetype: chosen.id,
-        alias: alias.trim(),
-        ...(experienceLevel ? { experienceLevel } : {}),
-      }),
-    ]);
+    const { error } = await supabase.from("user_profiles").update({
+      path,
+      archetype: chosen.id,
+      alias: alias.trim(),
+      ...(experienceLevel ? { experience_level: experienceLevel } : {}),
+    }).eq("id", profile.id);
+    if (error) throw new Error(error.message);
     setSaving(false);
     setStep("reveal");
   };

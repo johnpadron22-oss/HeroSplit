@@ -12,7 +12,7 @@ import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, Chevron
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { db, id } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 
@@ -74,15 +74,14 @@ export default function Home() {
   useEffect(() => {
     if (!user || loadingProgress) return;
     if (!progress?.profile) {
-      db.transact([
-        db.tx.userProfiles[id()].update({
-          userId: user.id,
-          isPro: false,
-          currentStreak: 0,
-          longestStreak: 0,
-          totalWorkouts: 0,
-        }),
-      ]);
+      supabase.from("user_profiles").insert({
+        user_id: user.id,
+        is_pro: false,
+        current_streak: 0,
+        longest_streak: 0,
+        total_workouts: 0,
+        total_xp: 0,
+      });
     }
   }, [user, loadingProgress, progress?.profile]);
 

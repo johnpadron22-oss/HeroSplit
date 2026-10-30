@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { db, id } from "@/lib/db";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -48,7 +49,58 @@ export interface UserProfile {
   experienceLevel?: "beginner" | "intermediate" | "advanced" | "veteran";
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Row mappers ───────────────────────────────────────────────────────────────
+
+function mapWorkout(r: Record<string, unknown>): Workout {
+  return {
+    id: r.id as string,
+    slug: r.slug as string,
+    name: r.name as string,
+    description: (r.description as string) ?? "",
+    type: r.type as string,
+    difficulty: (r.difficulty as string) ?? "",
+    program: (r.program as Record<string, unknown>) ?? {},
+    imageUrl: r.image_url as string | undefined,
+    avatarEmoji: r.avatar_emoji as string | undefined,
+    equipment: r.equipment as string | undefined,
+    series: r.series as string | undefined,
+    workoutStyle: r.workout_style as string | undefined,
+    isPro: Boolean(r.is_pro),
+  };
+}
+
+function mapLog(r: Record<string, unknown>): WorkoutLog {
+  return {
+    id: r.id as string,
+    userId: r.user_id as string,
+    workoutId: r.workout_id as string | undefined,
+    workoutName: r.workout_name as string,
+    date: r.date as string,
+    duration: r.duration as number,
+    completedAt: r.completed_at as number,
+    xpEarned: r.xp_earned as number | undefined,
+    setsData: r.sets_data as WorkoutLog["setsData"],
+  };
+}
+
+function mapProfile(r: Record<string, unknown>): UserProfile {
+  return {
+    id: r.id as string,
+    userId: r.user_id as string,
+    isPro: Boolean(r.is_pro),
+    currentStreak: (r.current_streak as number) ?? 0,
+    longestStreak: (r.longest_streak as number) ?? 0,
+    totalWorkouts: (r.total_workouts as number) ?? 0,
+    totalXP: r.total_xp as number | undefined,
+    stripeCustomerId: r.stripe_customer_id as string | undefined,
+    path: r.path as UserProfile["path"],
+    archetype: r.archetype as string | undefined,
+    alias: r.alias as string | undefined,
+    experienceLevel: r.experience_level as UserProfile["experienceLevel"],
+  };
+}
+
+// ── Streak helpers ────────────────────────────────────────────────────────────
 
 function computeStreakFromDates(rawDates: string[]): number {
   if (!rawDates.length) return 0;
@@ -64,121 +116,109 @@ function computeStreakFromDates(rawDates: string[]): number {
       const d = new Date(expected);
       d.setDate(d.getDate() - 1);
       expected = format(d, "yyyy-MM-dd");
-    } else {
-      break;
-    }
+    } else break;
   }
   return streak;
-}
-
-function computeStreak(logs: WorkoutLog[]): number {
-  return computeStreakFromDates(logs.map((l) => l.date));
 }
 
 // ── Workouts ─────────────────────────────────────────────────────────────────
 
 export function useWorkouts(type?: "hero" | "villain" | "custom" | "anime") {
-  const query = type
-    ? { workouts: { $: { where: { type } } } }
-    : { workouts: {} };
+  const [data, setData] = useState<Workout[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  const { data, isLoading, error } = db.useQuery(query);
+  useEffect(() => {
+    let q = supabase.from("workouts").select("*");
+    if (type) q = q.eq("type", type);
+    q.then(({ data: rows, error: err }) => {
+      if (err) setError(new Error(err.message));
+      else setData((rows ?? []).map((r) => mapWorkout(r as Record<string, unknown>)));
+      setIsLoading(false);
+    });
+  }, [type]);
 
-  return {
-    data: (data?.workouts ?? []) as Workout[],
-    isLoading,
-    error,
-  };
+  return { data, isLoading, error };
 }
 
 export function useWorkout(slug: string) {
-  const { data, isLoading, error } = db.useQuery(
-    slug ? { workouts: { $: { where: { slug } } } } : null
-  );
+  const [data, setData] = useState<Workout | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  return {
-    data: (data?.workouts?.[0] ?? null) as Workout | null,
-    isLoading,
-    error,
-  };
+  useEffect(() => {
+    if (!slug) { setIsLoading(false); return; }
+    supabase.from("workouts").select("*").eq("slug", slug).maybeSingle()
+      .then(({ data: row, error: err }) => {
+        if (err) setError(new Error(err.message));
+        else setData(row ? mapWorkout(row as Record<string, unknown>) : null);
+        setIsLoading(false);
+      });
+  }, [slug]);
+
+  return { data, isLoading, error };
 }
 
 // ── Logs ─────────────────────────────────────────────────────────────────────
 
 export function useCreateLog() {
-  const { user } = db.useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
 
-  // Query profile + existing logs so we can update XP, totalWorkouts, longestStreak
-  const { data: profileData } = db.useQuery(
-    user
-      ? {
-          userProfiles: { $: { where: { userId: user.id } } },
-          workoutLogs:  { $: { where: { userId: user.id } } },
-        }
-      : null
-  );
-  const profile      = profileData?.userProfiles?.[0] ?? null;
-  const existingLogs = (profileData?.workoutLogs ?? []) as WorkoutLog[];
-
   const mutate = async (
     data: {
-      workoutId?: string | number;
+      workoutId?: string;
       workoutName: string;
       duration: number;
       date: string;
-      userId?: string;
       xpEarned?: number;
-      setsData?: Array<{ name: string; sets: Array<{ weight: string; reps: string }> }>;
+      setsData?: WorkoutLog["setsData"];
     },
     options?: { onSuccess?: () => void; onError?: (e: Error) => void }
   ) => {
     if (!user) return;
     setIsPending(true);
     try {
-      const transactions: any[] = [
-        db.tx.workoutLogs[id()].update({
-          userId: user.id,
-          workoutName: data.workoutName,
-          duration: data.duration,
-          date: data.date,
-          completedAt: Date.now(),
-          ...(data.workoutId ? { workoutId: String(data.workoutId) } : {}),
-          ...(data.xpEarned !== undefined ? { xpEarned: data.xpEarned } : {}),
-          ...(data.setsData ? { setsData: data.setsData } : {}),
-        }),
-      ];
+      // Insert the log
+      const { error: logErr } = await supabase.from("workout_logs").insert({
+        user_id: user.id,
+        workout_name: data.workoutName,
+        duration: data.duration,
+        date: data.date,
+        completed_at: Date.now(),
+        ...(data.workoutId ? { workout_id: data.workoutId } : {}),
+        ...(data.xpEarned !== undefined ? { xp_earned: data.xpEarned } : {}),
+        ...(data.setsData ? { sets_data: data.setsData } : {}),
+      });
+      if (logErr) throw new Error(logErr.message);
 
-      // Update profile: totalXP + totalWorkouts + longestStreak
+      // Fetch current profile + all logs to compute new stats
+      const [{ data: profileRows }, { data: logRows }] = await Promise.all([
+        supabase.from("user_profiles").select("*").eq("user_id", user.id),
+        supabase.from("workout_logs").select("date").eq("user_id", user.id),
+      ]);
+
+      const profile = profileRows?.[0] ? mapProfile(profileRows[0] as Record<string, unknown>) : null;
+      const allDates = [...(logRows ?? []).map((l) => (l as Record<string, unknown>).date as string), data.date];
+      const newStreak = computeStreakFromDates(allDates);
+
       if (profile) {
-        // Compute streak including today's new log date
-        const allDates = [...existingLogs.map((l) => l.date), data.date];
-        const newStreak = computeStreakFromDates(allDates);
-        const newLongest = Math.max(profile.longestStreak ?? 0, newStreak);
-
-        transactions.push(
-          db.tx.userProfiles[profile.id].update({
-            totalXP:       (profile.totalXP      ?? 0) + (data.xpEarned ?? 0),
-            totalWorkouts: (profile.totalWorkouts ?? 0) + 1,
-            currentStreak: newStreak,
-            longestStreak: newLongest,
-          })
-        );
+        await supabase.from("user_profiles").update({
+          total_xp: (profile.totalXP ?? 0) + (data.xpEarned ?? 0),
+          total_workouts: profile.totalWorkouts + 1,
+          current_streak: newStreak,
+          longest_streak: Math.max(profile.longestStreak, newStreak),
+        }).eq("id", profile.id);
       }
 
-      await db.transact(transactions);
       toast({
         title: "Workout Complete!",
         description: `+${data.xpEarned ?? 0} XP earned. Your progress has been saved.`,
       });
       options?.onSuccess?.();
     } catch (e) {
-      toast({
-        title: "Error",
-        description: "Failed to save workout log.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to save workout log.", variant: "destructive" });
       options?.onError?.(e as Error);
     } finally {
       setIsPending(false);
@@ -191,43 +231,47 @@ export function useCreateLog() {
 // ── User Progress ─────────────────────────────────────────────────────────────
 
 export function useUserProgress() {
-  const { user } = db.useAuth();
+  const { user } = useAuth();
+  const [data, setData] = useState<{
+    stats: { isPro: boolean; currentStreak: number; longestStreak: number; totalWorkouts: number };
+    logs: WorkoutLog[];
+    achievements: { id: string; achievementId: string; unlockedAt: number }[];
+    profile: UserProfile | null;
+  }>({
+    stats: { isPro: false, currentStreak: 0, longestStreak: 0, totalWorkouts: 0 },
+    logs: [],
+    achievements: [],
+    profile: null,
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data, isLoading } = db.useQuery(
-    user
-      ? {
-          workoutLogs: { $: { where: { userId: user.id } } },
-          achievements: { $: { where: { userId: user.id } } },
-          userProfiles: { $: { where: { userId: user.id } } },
-        }
-      : null
-  );
-
-  const logs = (data?.workoutLogs ?? []) as WorkoutLog[];
-  const achievements = (data?.achievements ?? []) as {
-    id: string;
-    achievementId: string;
-    unlockedAt: number;
-  }[];
-  const profile = (data?.userProfiles?.[0] ?? null) as UserProfile | null;
-
-  // Live-computed streak (always accurate — resets if a day was missed)
-  const computedStreak = computeStreak(logs);
-
-  // Sync stored streak whenever it diverges from the live value.
-  // This handles the case where a user misses a day — their stored
-  // currentStreak stays non-zero until this effect fires on next load.
-  useEffect(() => {
-    if (!profile) return;
-    if (profile.currentStreak === computedStreak) return;
-    db.transact([
-      db.tx.userProfiles[profile.id].update({ currentStreak: computedStreak }),
+  const refresh = useCallback(async () => {
+    if (!user) { setIsLoading(false); return; }
+    const [logsRes, achRes, profRes] = await Promise.all([
+      supabase.from("workout_logs").select("*").eq("user_id", user.id),
+      supabase.from("achievements").select("*").eq("user_id", user.id),
+      supabase.from("user_profiles").select("*").eq("user_id", user.id),
     ]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.id, computedStreak]);
 
-  return {
-    data: {
+    const logs = (logsRes.data ?? []).map((r) => mapLog(r as Record<string, unknown>));
+    const achievements = (achRes.data ?? []).map((r) => ({
+      id: (r as Record<string, unknown>).id as string,
+      achievementId: (r as Record<string, unknown>).achievement_id as string,
+      unlockedAt: (r as Record<string, unknown>).unlocked_at as number,
+    }));
+    const profile = profRes.data?.[0] ? mapProfile(profRes.data[0] as Record<string, unknown>) : null;
+
+    const computedStreak = computeStreakFromDates(logs.map((l) => l.date));
+
+    // Sync stored streak if it drifted
+    if (profile && profile.currentStreak !== computedStreak) {
+      await supabase.from("user_profiles")
+        .update({ current_streak: computedStreak })
+        .eq("id", profile.id);
+      profile.currentStreak = computedStreak;
+    }
+
+    setData({
       stats: {
         isPro: profile?.isPro ?? false,
         currentStreak: computedStreak,
@@ -237,15 +281,19 @@ export function useUserProgress() {
       logs,
       achievements,
       profile,
-    },
-    isLoading,
-  };
+    });
+    setIsLoading(false);
+  }, [user]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  return { data, isLoading, refresh };
 }
 
 // ── Pro (Stripe Checkout) ─────────────────────────────────────────────────────
 
 export function useUpgradePro() {
-  const { user } = db.useAuth();
+  const { user } = useAuth();
   const [isPending, setIsPending] = useState(false);
   const { toast } = useToast();
 
@@ -259,14 +307,12 @@ export function useUpgradePro() {
         body: JSON.stringify({ userId: user.id, email: user.email, plan }),
       });
       const json = await res.json();
-      if (!res.ok || json.error) {
-        throw new Error(json.error ?? "Checkout failed");
-      }
+      if (!res.ok || json.error) throw new Error(json.error ?? "Checkout failed");
       window.location.href = json.url;
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: "Payment Error",
-        description: e.message ?? "Could not start checkout. Please try again.",
+        description: (e as Error).message ?? "Could not start checkout. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -277,17 +323,23 @@ export function useUpgradePro() {
   return { upgrade, isPending };
 }
 
-// Keep useTogglePro as alias so PaywallDialog compiles until it's updated
 export const useTogglePro = useUpgradePro;
 
-// ── Quick Pro check (lightweight — avoids pulling full progress) ──────────────
+// ── Quick Pro check ───────────────────────────────────────────────────────────
 
 export function useIsPro(): boolean {
-  const { user } = db.useAuth();
-  const { data } = db.useQuery(
-    user ? { userProfiles: { $: { where: { userId: user.id } } } } : null
-  );
-  return (data?.userProfiles?.[0] as UserProfile | undefined)?.isPro ?? false;
+  const { user } = useAuth();
+  const [isPro, setIsPro] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("user_profiles").select("is_pro").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data) setIsPro(Boolean((data as Record<string, unknown>).is_pro));
+      });
+  }, [user]);
+
+  return isPro;
 }
 
 // ── Billing Portal ────────────────────────────────────────────────────────────
@@ -307,10 +359,10 @@ export function useManageBilling() {
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error ?? "Portal error");
       window.location.href = json.url;
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: "Billing Error",
-        description: e.message ?? "Could not open billing portal. Please try again.",
+        description: (e as Error).message ?? "Could not open billing portal.",
         variant: "destructive",
       });
     } finally {

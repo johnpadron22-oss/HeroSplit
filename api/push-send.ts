@@ -1,21 +1,11 @@
-/**
- * POST /api/push-send
- *
- * Called by Vercel Cron at 8 PM UTC daily.
- * Sends a streak-reminder push notification to every subscriber
- * whose currentStreak > 0 AND who hasn't logged a workout today.
- *
- * Also accepts X-Push-Test: true header to send a test to a single userId
- * without the streak/today check (useful for manual testing).
- */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import webpush from "web-push";
-import { init } from "@instantdb/admin";
+import { createClient } from "@supabase/supabase-js";
 
-const db = init({
-  appId: process.env.INSTANT_APP_ID!,
-  adminToken: process.env.INSTANT_ADMIN_TOKEN!,
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
@@ -23,39 +13,18 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY!
 );
 
-/** YYYY-MM-DD in UTC */
 function todayUTC(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-type PushSub = {
-  id: string;
-  userId: string;
-  endpoint: string;
-  p256dh: string;
-  auth: string;
-};
-
-type UserProfile = {
-  userId: string;
-  currentStreak: number;
-};
-
-type WorkoutLog = {
-  userId: string;
-  date: string;
-};
+type PushSub = { id: string; user_id: string; endpoint: string; p256dh: string; auth: string };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  // ── Auth: Vercel cron sends CRON_SECRET in Authorization header ──────────────
   const isTest = req.headers["x-push-test"] === "true";
   const authHeader = req.headers["authorization"];
   const cronSecret = process.env.CRON_SECRET;
-
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -63,53 +32,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const today = todayUTC();
 
-    // Fetch all subscriptions
-    const subsResult = await db.query({
-      pushSubscriptions: {},
-    });
-    const allSubs: PushSub[] = subsResult.pushSubscriptions ?? [];
+    const { data: allSubs } = await supabase.from("push_subscriptions").select("*");
+    const subs: PushSub[] = allSubs ?? [];
 
-    if (allSubs.length === 0) {
-      return res.status(200).json({ ok: true, sent: 0, message: "No subscribers" });
-    }
+    if (subs.length === 0) return res.status(200).json({ ok: true, sent: 0, message: "No subscribers" });
 
-    // In test mode — send immediately to all, skip streak/today check
     if (isTest) {
-      const testUserId = req.body?.userId as string | undefined;
-      const targets = testUserId ? allSubs.filter((s) => s.userId === testUserId) : allSubs.slice(0, 1);
-      const results = await sendToSubscriptions(targets, {
-        title: "🧪 HeroSplit Test",
-        body: "Push notifications are working.",
-        url: "/",
-        tag: "herosplit-test",
-      });
+      const testUserId = (req.body as { userId?: string })?.userId;
+      const targets = testUserId ? subs.filter((s) => s.user_id === testUserId) : subs.slice(0, 1);
+      const results = await sendToSubs(targets, { title: "🧪 HeroSplit Test", body: "Push notifications are working.", url: "/", tag: "herosplit-test" });
       return res.status(200).json({ ok: true, ...results });
     }
 
-    // Fetch user profiles to check streaks
-    const profilesResult = await db.query({ userProfiles: {} });
-    const profiles: UserProfile[] = profilesResult.userProfiles ?? [];
+    const { data: profiles } = await supabase.from("user_profiles").select("user_id, current_streak");
     const streakByUser: Record<string, number> = {};
-    for (const p of profiles) {
-      streakByUser[p.userId] = p.currentStreak ?? 0;
+    for (const p of profiles ?? []) {
+      streakByUser[(p as Record<string, unknown>).user_id as string] = (p as Record<string, unknown>).current_streak as number ?? 0;
     }
 
-    // Fetch today's workout logs to find who already trained
-    const logsResult = await db.query({
-      workoutLogs: { $: { where: { date: today } } },
-    });
-    const todayLogs: WorkoutLog[] = logsResult.workoutLogs ?? [];
-    const trainedTodaySet = new Set(todayLogs.map((l) => l.userId));
+    const { data: todayLogs } = await supabase.from("workout_logs").select("user_id").eq("date", today);
+    const trainedToday = new Set((todayLogs ?? []).map((l) => (l as Record<string, unknown>).user_id as string));
 
-    // Filter to subs where user has a streak AND hasn't trained today
-    const eligible = allSubs.filter((sub) => {
-      const streak = streakByUser[sub.userId] ?? 0;
-      return streak > 0 && !trainedTodaySet.has(sub.userId);
+    const eligible = subs.filter((s) => {
+      const streak = streakByUser[s.user_id] ?? 0;
+      return streak > 0 && !trainedToday.has(s.user_id);
     });
 
-    if (eligible.length === 0) {
-      return res.status(200).json({ ok: true, sent: 0, message: "All streaks safe or no active streaks" });
-    }
+    if (eligible.length === 0) return res.status(200).json({ ok: true, sent: 0, message: "All streaks safe" });
 
     const streakMsg = (userId: string) => {
       const streak = streakByUser[userId] ?? 0;
@@ -118,40 +67,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : `🔥 Keep your ${streak}-day streak alive — log a session today.`;
     };
 
-    // Send individually (so per-user message can vary)
-    let sent = 0;
-    let failed = 0;
+    let sent = 0, failed = 0;
     const expired: string[] = [];
 
-    await Promise.all(
-      eligible.map(async (sub) => {
-        const payload = JSON.stringify({
-          title: "HeroSplit",
-          body: streakMsg(sub.userId),
-          url: "/",
-          tag: "herosplit-streak",
-        });
-
-        try {
-          await webpush.sendNotification(
-            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-            payload
-          );
-          sent++;
-        } catch (err: unknown) {
-          // 410 Gone = subscription expired; remove it
-          if (err && typeof err === "object" && "statusCode" in err && (err as { statusCode: number }).statusCode === 410) {
-            expired.push(sub.id);
-          }
-          failed++;
+    await Promise.all(eligible.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          JSON.stringify({ title: "HeroSplit", body: streakMsg(sub.user_id), url: "/", tag: "herosplit-streak" })
+        );
+        sent++;
+      } catch (err: unknown) {
+        if (err && typeof err === "object" && "statusCode" in err && (err as { statusCode: number }).statusCode === 410) {
+          expired.push(sub.id);
         }
-      })
-    );
+        failed++;
+      }
+    }));
 
-    // Clean up expired subscriptions
     if (expired.length > 0) {
-      const { tx } = await import("@instantdb/admin");
-      await db.transact(expired.map((subId) => tx.pushSubscriptions[subId].delete()));
+      await supabase.from("push_subscriptions").delete().in("id", expired);
     }
 
     return res.status(200).json({ ok: true, sent, failed, expiredRemoved: expired.length });
@@ -161,24 +96,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function sendToSubscriptions(
-  subs: PushSub[],
-  data: { title: string; body: string; url: string; tag: string }
-) {
-  let sent = 0;
-  let failed = 0;
-  await Promise.all(
-    subs.map(async (sub) => {
-      try {
-        await webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          JSON.stringify(data)
-        );
-        sent++;
-      } catch {
-        failed++;
-      }
-    })
-  );
+async function sendToSubs(subs: PushSub[], data: { title: string; body: string; url: string; tag: string }) {
+  let sent = 0, failed = 0;
+  await Promise.all(subs.map(async (sub) => {
+    try {
+      await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(data));
+      sent++;
+    } catch { failed++; }
+  }));
   return { sent, failed };
 }
