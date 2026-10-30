@@ -28,11 +28,11 @@ export default function Home() {
   const queryClient = useQueryClient();
 
   const handleOnboardingComplete = (expLevel: "beginner" | "intermediate" | "advanced" | "veteran") => {
-    const tier =
-      expLevel === "beginner" ? "Foundation" :
-      expLevel === "intermediate" ? "Blueprint" : "Nemesis";
+    const rec =
+      expLevel === "beginner"     ? "Night Acrobat" :
+      expLevel === "intermediate" ? "Agile Climber" : "Night Detective";
     setActiveTab("browse");
-    setRecommendation(tier);
+    setRecommendation(rec);
     // Auto-dismiss recommendation banner after 8s
     setTimeout(() => setRecommendation(null), 8000);
   };
@@ -198,31 +198,19 @@ export default function Home() {
           <TabsContent value="browse" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-display text-hero">Hero Workouts</h2>
-              <span className="text-xs font-mono text-muted-foreground uppercase tracking-widest border border-white/10 px-2 py-1 rounded">
-                Free Access
+              <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest border border-cyan-500/20 px-2 py-1 rounded bg-cyan-500/10">
+                4 Free + Pro
               </span>
             </div>
 
             {/* Recommendation banner — shown briefly after onboarding */}
             {recommendation && (
-              <div className={cn(
-                "flex items-center justify-between gap-4 p-4 rounded-2xl border animate-in fade-in slide-in-from-top-2 duration-500",
-                recommendation === "Foundation" && "bg-green-500/10 border-green-500/30",
-                recommendation === "Blueprint"  && "bg-cyan-500/10 border-cyan-500/30",
-                recommendation === "Nemesis"    && "bg-purple-500/10 border-purple-500/30",
-              )}>
+              <div className="flex items-center justify-between gap-4 p-4 rounded-2xl border animate-in fade-in slide-in-from-top-2 duration-500 bg-cyan-500/10 border-cyan-500/30">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">
-                    {recommendation === "Foundation" ? "🌱" : recommendation === "Blueprint" ? "⚔️" : "🔥"}
-                  </span>
+                  <span className="text-2xl">🎯</span>
                   <div>
-                    <div className={cn(
-                      "text-sm font-bold",
-                      recommendation === "Foundation" && "text-green-400",
-                      recommendation === "Blueprint"  && "text-cyan-400",
-                      recommendation === "Nemesis"    && "text-purple-400",
-                    )}>
-                      Start with the {recommendation} Series
+                    <div className="text-sm font-bold text-cyan-400">
+                      Start with: {recommendation}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Recommended based on your experience level
@@ -245,7 +233,13 @@ export default function Home() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {heroWorkouts.map((workout) => (
-                  <WorkoutCard key={workout.id} workout={workout} experienceLevel={progress?.profile?.experienceLevel} />
+                  <WorkoutCard
+                    key={workout.id}
+                    workout={workout}
+                    isLocked={workout.isPro && !isPro}
+                    onUnlock={() => setShowPaywall(true)}
+                    experienceLevel={progress?.profile?.experienceLevel}
+                  />
                 ))}
                 {heroWorkouts.length === 0 && (
                   <div className="col-span-full text-center py-12 text-muted-foreground">
