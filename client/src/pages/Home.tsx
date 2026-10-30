@@ -9,6 +9,7 @@ import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
 import { DeleteAccountCard } from "@/components/DeleteAccountCard";
+import { MuscleMap } from "@/components/MuscleMap";
 import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus, Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -17,6 +18,8 @@ import { supabase } from "@/lib/supabase";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+import { getMuscleTrainingCounts, countToTier, MUSCLE_LABELS } from "@/lib/muscles";
+import type { MuscleGroup, MuscleTrainingTier } from "@/lib/muscles";
 
 export default function Home() {
   const [showPaywall, setShowPaywall] = useState(false);
@@ -444,6 +447,77 @@ export default function Home() {
                   <h3 className="text-lg font-bold mb-6">Workout Activity</h3>
                   <ProgressChart logs={progress?.logs ?? []} />
                 </div>
+
+                {/* Muscle Training Map */}
+                {(() => {
+                  const counts = getMuscleTrainingCounts(progress?.logs ?? []);
+                  const tierMap = Object.fromEntries(
+                    (Object.entries(counts) as [MuscleGroup, number][]).map(
+                      ([m, c]) => [m, countToTier(c)] as [MuscleGroup, MuscleTrainingTier]
+                    )
+                  ) as Record<MuscleGroup, MuscleTrainingTier>;
+
+                  const hasAnyData = Object.values(counts).some((c) => c > 0);
+
+                  const topMuscles = (Object.entries(counts) as [MuscleGroup, number][])
+                    .filter(([, c]) => c > 0)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 5);
+
+                  return (
+                    <div className="bg-card border border-white/5 p-6 rounded-2xl space-y-5">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold">Muscle Training Map</h3>
+                        {hasAnyData && (
+                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />Gold 5+</span>
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-700 inline-block" />Bronze 2–4</span>
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-900 inline-block" />Wood 1</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {hasAnyData ? (
+                        <>
+                          <MuscleMap tierMap={tierMap} view="both" size="lg" />
+
+                          {topMuscles.length > 0 && (
+                            <div className="space-y-2 pt-2 border-t border-white/5">
+                              <div className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Most Trained</div>
+                              <div className="space-y-1.5">
+                                {topMuscles.map(([muscle, count]) => {
+                                  const tier = countToTier(count);
+                                  const barColor =
+                                    tier === "gold"   ? "bg-amber-500" :
+                                    tier === "bronze" ? "bg-orange-700" : "bg-yellow-900";
+                                  const maxCount = topMuscles[0][1];
+                                  return (
+                                    <div key={muscle} className="flex items-center gap-3">
+                                      <div className="w-24 text-xs text-muted-foreground shrink-0">
+                                        {MUSCLE_LABELS[muscle]}
+                                      </div>
+                                      <div className="flex-1 bg-white/5 rounded-full h-2 overflow-hidden">
+                                        <div
+                                          className={cn("h-full rounded-full transition-all", barColor)}
+                                          style={{ width: `${(count / maxCount) * 100}%` }}
+                                        />
+                                      </div>
+                                      <div className="text-xs text-muted-foreground w-6 text-right shrink-0">{count}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-center py-6 text-sm text-muted-foreground">
+                          Complete workouts to see your muscle training map fill up.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Workout History with expandable sets detail */}
                 <div className="bg-card border border-white/5 p-6 rounded-2xl">

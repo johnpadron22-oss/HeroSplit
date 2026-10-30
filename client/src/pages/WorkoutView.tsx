@@ -8,12 +8,16 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeft, CheckCircle, ChevronRight, Dumbbell,
   Flame, Loader2, Play, SkipForward, Timer, Trophy, Zap,
-  Info, TrendingUp, Wind, ArrowUpRight,
+  Info, TrendingUp, Wind, ArrowUpRight, Target,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
 import { LootDrop } from "@/components/LootDrop";
+import { MuscleMap } from "@/components/MuscleMap";
+import { MuscleGroupCard } from "@/components/MuscleGroupCard";
+import { getProgramMuscles, getExerciseMuscles, MUSCLE_LABELS } from "@/lib/muscles";
+import type { MuscleGroup, MuscleStatus } from "@/lib/muscles";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -361,6 +365,50 @@ export default function WorkoutView() {
             </div>
           )}
 
+          {/* Muscles Targeted */}
+          {(() => {
+            const muscleMap = getProgramMuscles(exercises);
+            const entries = Object.entries(muscleMap) as [MuscleGroup, MuscleStatus][];
+            const primaryMuscles = entries.filter(([, s]) => s === "primary");
+            if (entries.length === 0) return null;
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Target className={cn("w-4 h-4", accentClass)} />
+                  <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Muscles Targeted</h2>
+                </div>
+
+                {/* Body map */}
+                <div className={cn("rounded-2xl p-4 border", isVillain ? "bg-purple-500/5 border-purple-500/10" : "bg-cyan-500/5 border-cyan-500/10")}>
+                  <MuscleMap statusMap={muscleMap} view="both" size="md" />
+                  <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500" />Primary</div>
+                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500" />Secondary</div>
+                  </div>
+                </div>
+
+                {/* Muscle cards grid */}
+                {primaryMuscles.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {primaryMuscles.slice(0, 4).map(([muscle, status]) => {
+                      const setCount = exercises
+                        .filter((ex) => getExerciseMuscles(ex.name).primary.includes(muscle))
+                        .reduce((sum, ex) => sum + (parseInt(ex.sets ?? "3", 10) || 3), 0);
+                      return (
+                        <MuscleGroupCard
+                          key={muscle}
+                          muscle={muscle}
+                          status={status}
+                          setCount={setCount || undefined}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Exercise list */}
           <div className="space-y-2">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">Exercises</h2>
@@ -400,100 +448,148 @@ export default function WorkoutView() {
   // ── Done ────────────────────────────────────────────────────────────────────
   if (phase === "done") {
     const totalSetsCompleted = Object.values(completedSets).reduce((s, sets) => s + sets.length, 0);
-
-    // Progression nudge: show for beginner/intermediate series workouts
-    const isBeginner = workout.difficulty === "Beginner";
-    const isIntermediate = workout.difficulty === "Intermediate";
     const isFoundation = workout.series === "Foundation Series";
     const isBlueprint = workout.series === "Blueprint Series";
 
+    // Build muscle map from completed exercises
+    const completedExNames = Object.entries(completedSets)
+      .filter(([, sets]) => sets.length > 0)
+      .map(([i]) => exercises[parseInt(i, 10)])
+      .filter((ex): ex is Exercise => ex !== undefined)
+      .map((ex) => ({ name: ex.name }));
+    const workedMuscles = getProgramMuscles(completedExNames);
+    const primaryWorked = Object.entries(workedMuscles)
+      .filter(([, s]) => s === "primary")
+      .map(([m]) => MUSCLE_LABELS[m as MuscleGroup])
+      .slice(0, 4);
+
     return (
       <>
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center space-y-8">
+      <div className="min-h-screen bg-background flex flex-col items-center pb-10 pt-8 px-4">
+        {/* Trophy header */}
         <motion.div
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", bounce: 0.5 }}
-          className="w-24 h-24 rounded-full bg-yellow-500/10 border-2 border-yellow-500/30 flex items-center justify-center"
+          className={cn(
+            "w-20 h-20 rounded-full border-2 flex items-center justify-center mb-5",
+            isVillain
+              ? "bg-purple-500/10 border-purple-500/30"
+              : "bg-yellow-500/10 border-yellow-500/30"
+          )}
         >
-          <Trophy className="w-12 h-12 text-yellow-400" />
+          <Trophy className={cn("w-10 h-10", isVillain ? "text-purple-400" : "text-yellow-400")} />
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-2"
+          transition={{ delay: 0.25 }}
+          className="text-center mb-6"
         >
           <h1 className="text-4xl font-display font-black">Battle Complete!</h1>
-          <p className="text-muted-foreground">{workout.name}</p>
+          <p className="text-muted-foreground text-sm mt-1">{workout.name}</p>
         </motion.div>
 
+        {/* Shareable summary card */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="grid grid-cols-3 gap-4 w-full max-w-sm"
+          transition={{ delay: 0.4 }}
+          className={cn(
+            "w-full max-w-sm rounded-3xl border p-5 space-y-5 shadow-xl mb-6",
+            isVillain
+              ? "bg-gradient-to-b from-purple-950/60 to-card border-purple-500/20"
+              : "bg-gradient-to-b from-cyan-950/40 to-card border-cyan-500/15"
+          )}
         >
-          {[
-            { icon: <Timer className="w-4 h-4" />, label: "Time", value: formatTime(elapsed) },
-            { icon: <Dumbbell className="w-4 h-4" />, label: "Sets", value: totalSetsCompleted },
-            { icon: <Zap className="w-4 h-4 text-yellow-400" />, label: "XP", value: `+${xpEarned}` },
-          ].map(({ icon, label, value }) => (
-            <div key={label} className="bg-card border border-white/5 rounded-2xl p-4 text-center">
-              <div className="flex justify-center text-muted-foreground mb-1">{icon}</div>
-              <div className="text-2xl font-display font-bold">{value}</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</div>
+          {/* XP banner */}
+          <div className={cn(
+            "flex items-center justify-center gap-2 py-2 rounded-xl font-bold text-lg",
+            isVillain ? "bg-purple-500/10" : "bg-yellow-500/10"
+          )}>
+            <Flame className={cn("w-5 h-5", isVillain ? "text-purple-400" : "text-yellow-400")} />
+            <span className={isVillain ? "text-purple-300" : "text-yellow-300"}>
+              +{xpEarned} XP Earned
+            </span>
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { icon: <Timer className="w-4 h-4" />, label: "Duration", value: formatTime(elapsed) },
+              { icon: <Dumbbell className="w-4 h-4" />, label: "Sets Done", value: String(totalSetsCompleted) },
+              { icon: <Zap className="w-4 h-4" />, label: "XP", value: `+${xpEarned}` },
+            ].map(({ icon, label, value }) => (
+              <div key={label} className="bg-white/5 rounded-2xl p-3 text-center">
+                <div className={cn("flex justify-center mb-1", accentClass)}>{icon}</div>
+                <div className="text-xl font-display font-bold tabular-nums">{value}</div>
+                <div className="text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Muscles worked visualization */}
+          {Object.keys(workedMuscles).length > 0 && (
+            <div className="space-y-2">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold flex items-center gap-1.5">
+                <Target className="w-3 h-3" />
+                Muscles Worked
+              </div>
+              <MuscleMap statusMap={workedMuscles} view="both" size="md" />
+              {primaryWorked.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {primaryWorked.map((name) => (
+                    <span
+                      key={name}
+                      className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
+          )}
         </motion.div>
 
+        {/* Progression nudges + CTA */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.6 }}
           className="w-full max-w-sm space-y-3"
         >
-          <div className="flex items-center gap-2 justify-center text-yellow-400 font-bold">
-            <Flame className="w-5 h-5" />
-            <span>+{xpEarned} XP Earned</span>
-          </div>
-
-          {/* Progression tip */}
           {program.notes && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-green-500/5 border border-green-500/20 text-left">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-green-500/5 border border-green-500/20">
               <TrendingUp className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
               <p className="text-xs text-green-300/80 leading-snug">{program.notes}</p>
             </div>
           )}
-
-          {/* Tier upgrade nudge */}
           {isFoundation && (
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 text-left">
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
               <ArrowUpRight className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
               <p className="text-xs text-cyan-300/80 leading-snug">
-                Completing Foundation workouts consistently? When they feel manageable with solid form, check out the <strong>Blueprint Series</strong> — it's your next level.
+                Foundation feeling solid? The <strong>Blueprint Series</strong> is your next challenge.
               </p>
             </div>
           )}
           {isBlueprint && (
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/20 text-left">
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/20">
               <ArrowUpRight className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
               <p className="text-xs text-purple-300/80 leading-snug">
-                Blueprint feeling smooth? The <strong>Nemesis Series</strong> (Pro) runs Push/Pull/Legs for maximum specialization. Upgrade when you're ready to level up.
+                Blueprint smooth? The <strong>Nemesis Series</strong> (Pro) runs PPL for maximum gains.
               </p>
             </div>
           )}
-
           <Link href="/" className="block">
-            <Button size="lg" className={cn("w-full h-12 font-bold", btnClass)}>
+            <Button size="lg" className={cn("w-full h-12 font-bold rounded-2xl", btnClass)}>
               Back to HeroSplit
             </Button>
           </Link>
         </motion.div>
       </div>
 
-      {/* Loot drop overlay */}
       {showLoot && (
         <LootDrop isVillain={isVillain} onClose={() => setShowLoot(false)} />
       )}
