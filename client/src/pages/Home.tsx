@@ -8,11 +8,13 @@ import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
+import { DeleteAccountCard } from "@/components/DeleteAccountCard";
 import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus, Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 
@@ -23,6 +25,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("browse");
   const [recommendation, setRecommendation] = useState<string | null>(null);
   const { openPortal, isPending: portalPending } = useManageBilling();
+  const queryClient = useQueryClient();
 
   const handleOnboardingComplete = (expLevel: "beginner" | "intermediate" | "advanced" | "veteran") => {
     const tier =
@@ -70,20 +73,17 @@ export default function Home() {
     }
   }, [toast]);
 
-  // Auto-create userProfile on first login
+  // Auto-create user_profile on first login (if none exists yet)
   useEffect(() => {
     if (!user || loadingProgress) return;
     if (!progress?.profile) {
-      supabase.from("user_profiles").insert({
-        user_id: user.id,
-        is_pro: false,
-        current_streak: 0,
-        longest_streak: 0,
-        total_workouts: 0,
-        total_xp: 0,
+      // Owner and stats are set by the database; the client only creates the row.
+      supabase.from("user_profiles").insert({ alias: null }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["userProgress"] });
       });
     }
-  }, [user, loadingProgress, progress?.profile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, loadingProgress, progress?.profile]);
 
   // Derive display name from email (e.g. "jonathan@gmail.com" → "Jonathan")
   const displayName = user?.email
@@ -533,7 +533,7 @@ export default function Home() {
                 </div>
 
                 {/* Subscription management — Pro users only */}
-                {isPro && progress?.profile?.stripeCustomerId && (
+                {isPro && progress?.subscription?.stripeCustomerId && (
                   <div className="bg-card border border-purple-500/20 p-5 rounded-2xl flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
@@ -548,7 +548,7 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       className="shrink-0 border-purple-500/30 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                      onClick={() => openPortal(progress.profile!.stripeCustomerId!)}
+                      onClick={() => openPortal()}
                       disabled={portalPending}
                     >
                       {portalPending
@@ -557,6 +557,8 @@ export default function Home() {
                     </Button>
                   </div>
                 )}
+
+                <DeleteAccountCard />
 
                 {/* Feedback card */}
                 <div className="bg-gradient-to-r from-purple-950/40 to-cyan-950/40 border border-white/10 p-5 rounded-2xl flex items-center justify-between gap-4">

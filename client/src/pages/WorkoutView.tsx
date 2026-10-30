@@ -135,8 +135,9 @@ export default function WorkoutView() {
     );
   }
 
-  // Pro gate — block direct URL access to Pro workouts for free users
-  if (workout.isPro && !isPro) {
+  // Pro gate. The server already withholds the program for non-Pro users;
+  // this only decides what to show instead.
+  if ((workout.isPro && !isPro) || !workout.program) {
     return (
       <>
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center gap-6">

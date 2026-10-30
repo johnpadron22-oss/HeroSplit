@@ -1,6 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!SUPABASE_URL)      console.error("Missing VITE_SUPABASE_URL");
+if (!SUPABASE_ANON_KEY) console.error("Missing VITE_SUPABASE_ANON_KEY");
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    // PKCE: the magic link redirect carries a one-time code, not tokens in the URL.
+    flowType: "pkce",
+  },
+});

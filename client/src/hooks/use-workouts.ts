@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +14,10 @@ export interface Workout {
   description: string;
   type: string;
   difficulty: string;
-  program: Record<string, unknown>;
+  // Only present when loaded through get_workout and the caller may see it.
+  program: Record<string, unknown> | null;
+  estDuration?: string;
+  exerciseCount: number;
   imageUrl?: string;
   avatarEmoji?: string;
   equipment?: string;
@@ -37,7 +41,7 @@ export interface WorkoutLog {
 export interface UserProfile {
   id: string;
   userId: string;
-  isPro: boolean;
+  isPro: boolean;       // display only — do NOT use for access gating
   currentStreak: number;
   longestStreak: number;
   totalWorkouts: number;
@@ -49,54 +53,80 @@ export interface UserProfile {
   experienceLevel?: "beginner" | "intermediate" | "advanced" | "veteran";
 }
 
-// ── Row mappers ───────────────────────────────────────────────────────────────
+// The authoritative, write-locked subscription record (only the Stripe
+// webhook can write this via the service role — clients cannot self-grant Pro).
+export interface UserSubscription {
+  id: string;
+  userId: string;
+  isPro: boolean;
+  stripeCustomerId?: string;
+  plan?: "monthly" | "annual";
+  subscribedAt?: number;
+  cancelledAt?: number;
+}
 
-function mapWorkout(r: Record<string, unknown>): Workout {
+// ── DB row → TS interface helpers ─────────────────────────────────────────────
+
+function rowToWorkout(row: Record<string, unknown>): Workout {
   return {
-    id: r.id as string,
-    slug: r.slug as string,
-    name: r.name as string,
-    description: (r.description as string) ?? "",
-    type: r.type as string,
-    difficulty: (r.difficulty as string) ?? "",
-    program: (r.program as Record<string, unknown>) ?? {},
-    imageUrl: r.image_url as string | undefined,
-    avatarEmoji: r.avatar_emoji as string | undefined,
-    equipment: r.equipment as string | undefined,
-    series: r.series as string | undefined,
-    workoutStyle: r.workout_style as string | undefined,
-    isPro: Boolean(r.is_pro),
+    id:           row.id as string,
+    slug:         row.slug as string,
+    name:         row.name as string,
+    description:  row.description as string,
+    type:         row.type as string,
+    difficulty:   row.difficulty as string,
+    program:      (row.program ?? null) as Record<string, unknown> | null,
+    estDuration:  (row.est_duration as string | null) ?? undefined,
+    exerciseCount: (row.exercise_count as number | null) ?? 0,
+    imageUrl:     row.image_url as string | undefined,
+    avatarEmoji:  row.avatar_emoji as string | undefined,
+    equipment:    row.equipment as string | undefined,
+    series:       row.series as string | undefined,
+    workoutStyle: row.workout_style as string | undefined,
+    isPro:        Boolean(row.is_pro),
   };
 }
 
-function mapLog(r: Record<string, unknown>): WorkoutLog {
+function rowToLog(row: Record<string, unknown>): WorkoutLog {
   return {
-    id: r.id as string,
-    userId: r.user_id as string,
-    workoutId: r.workout_id as string | undefined,
-    workoutName: r.workout_name as string,
-    date: r.date as string,
-    duration: r.duration as number,
-    completedAt: r.completed_at as number,
-    xpEarned: r.xp_earned as number | undefined,
-    setsData: r.sets_data as WorkoutLog["setsData"],
+    id:          row.id as string,
+    userId:      row.user_id as string,
+    workoutId:   row.workout_id as string | undefined,
+    workoutName: row.workout_name as string,
+    date:        row.date as string,
+    duration:    row.duration as number,
+    completedAt: row.completed_at as number,
+    xpEarned:   row.xp_earned as number | undefined,
+    setsData:   row.sets_data as WorkoutLog["setsData"],
   };
 }
 
-function mapProfile(r: Record<string, unknown>): UserProfile {
+function rowToProfile(row: Record<string, unknown>): UserProfile {
   return {
-    id: r.id as string,
-    userId: r.user_id as string,
-    isPro: Boolean(r.is_pro),
-    currentStreak: (r.current_streak as number) ?? 0,
-    longestStreak: (r.longest_streak as number) ?? 0,
-    totalWorkouts: (r.total_workouts as number) ?? 0,
-    totalXP: r.total_xp as number | undefined,
-    stripeCustomerId: r.stripe_customer_id as string | undefined,
-    path: r.path as UserProfile["path"],
-    archetype: r.archetype as string | undefined,
-    alias: r.alias as string | undefined,
-    experienceLevel: r.experience_level as UserProfile["experienceLevel"],
+    id:              row.id as string,
+    userId:          row.user_id as string,
+    isPro:           Boolean(row.is_pro),
+    currentStreak:   (row.current_streak as number) ?? 0,
+    longestStreak:   (row.longest_streak as number) ?? 0,
+    totalWorkouts:   (row.total_workouts as number) ?? 0,
+    totalXP:         (row.total_xp as number) ?? 0,
+    stripeCustomerId: row.stripe_customer_id as string | undefined,
+    path:            row.path as UserProfile["path"],
+    archetype:       row.archetype as string | undefined,
+    alias:           row.alias as string | undefined,
+    experienceLevel: row.experience_level as UserProfile["experienceLevel"],
+  };
+}
+
+function rowToSubscription(row: Record<string, unknown>): UserSubscription {
+  return {
+    id:              row.id as string,
+    userId:          row.user_id as string,
+    isPro:           Boolean(row.is_pro),
+    stripeCustomerId: row.stripe_customer_id as string | undefined,
+    plan:            row.plan as UserSubscription["plan"],
+    subscribedAt:    row.subscribed_at as number | undefined,
+    cancelledAt:     row.cancelled_at as number | undefined,
   };
 }
 
@@ -104,11 +134,11 @@ function mapProfile(r: Record<string, unknown>): UserProfile {
 
 function computeStreakFromDates(rawDates: string[]): number {
   if (!rawDates.length) return 0;
-  const dates = [...new Set(rawDates)].sort().reverse();
-  const today = format(new Date(), "yyyy-MM-dd");
+  const dates = Array.from(new Set(rawDates)).sort().reverse();
+  const today     = format(new Date(), "yyyy-MM-dd");
   const yesterday = format(new Date(Date.now() - 86400000), "yyyy-MM-dd");
   if (dates[0] !== today && dates[0] !== yesterday) return 0;
-  let streak = 0;
+  let streak   = 0;
   let expected = dates[0];
   for (const date of dates) {
     if (date === expected) {
@@ -121,42 +151,63 @@ function computeStreakFromDates(rawDates: string[]): number {
   return streak;
 }
 
+function computeStreak(logs: WorkoutLog[]): number {
+  return computeStreakFromDates(logs.map((l) => l.date));
+}
+
+// ── API helper ───────────────────────────────────────────────────────────────
+
+async function callApi(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Please sign in again.");
+  const res = await fetch(path, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Request failed");
+  return json;
+}
+
 // ── Workouts ─────────────────────────────────────────────────────────────────
 
+// Every column except `program` — paid content is only served by get_workout().
+const WORKOUT_LIST_COLUMNS =
+  "id, slug, name, description, type, difficulty, image_url, avatar_emoji, equipment, series, workout_style, is_pro, est_duration, exercise_count";
+
 export function useWorkouts(type?: "hero" | "villain" | "custom" | "anime") {
-  const [data, setData] = useState<Workout[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["workouts", type ?? "all"],
+    queryFn: async () => {
+      let q = supabase.from("workouts").select(WORKOUT_LIST_COLUMNS);
+      if (type) q = q.eq("type", type);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []).map(rowToWorkout);
+    },
+    staleTime: 5 * 60 * 1000, // workouts rarely change — cache 5 min
+  });
 
-  useEffect(() => {
-    let q = supabase.from("workouts").select("*");
-    if (type) q = q.eq("type", type);
-    q.then(({ data: rows, error: err }) => {
-      if (err) setError(new Error(err.message));
-      else setData((rows ?? []).map((r) => mapWorkout(r as Record<string, unknown>)));
-      setIsLoading(false);
-    });
-  }, [type]);
-
-  return { data, isLoading, error };
+  return { data: data ?? [], isLoading, error };
 }
 
 export function useWorkout(slug: string) {
-  const [data, setData] = useState<Workout | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["workout", slug],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_workout", { p_slug: slug });
+      if (error) throw error;
+      return data ? rowToWorkout(data as Record<string, unknown>) : null;
+    },
+    enabled: !!slug,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    if (!slug) { setIsLoading(false); return; }
-    supabase.from("workouts").select("*").eq("slug", slug).maybeSingle()
-      .then(({ data: row, error: err }) => {
-        if (err) setError(new Error(err.message));
-        else setData(row ? mapWorkout(row as Record<string, unknown>) : null);
-        setIsLoading(false);
-      });
-  }, [slug]);
-
-  return { data, isLoading, error };
+  return { data: data ?? null, isLoading, error };
 }
 
 // ── Logs ─────────────────────────────────────────────────────────────────────
@@ -164,116 +215,92 @@ export function useWorkout(slug: string) {
 export function useCreateLog() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isPending, setIsPending] = useState(false);
+  const queryClient = useQueryClient();
 
-  const mutate = async (
-    data: {
-      workoutId?: string;
+  const mutation = useMutation({
+    mutationFn: async (data: {
+      workoutId?: string | number;
       workoutName: string;
       duration: number;
       date: string;
       xpEarned?: number;
-      setsData?: WorkoutLog["setsData"];
-    },
-    options?: { onSuccess?: () => void; onError?: (e: Error) => void }
-  ) => {
-    if (!user) return;
-    setIsPending(true);
-    try {
-      // Insert the log
-      const { error: logErr } = await supabase.from("workout_logs").insert({
-        user_id: user.id,
+      setsData?: Array<{ name: string; sets: Array<{ weight: string; reps: string }> }>;
+    }) => {
+      if (!user) throw new Error("Not authenticated");
+
+      // user_id and completed_at are set by the database from the session.
+      // XP, streaks and totals are recomputed by a database trigger.
+      const { error: logError } = await supabase.from("workout_logs").insert({
         workout_name: data.workoutName,
-        duration: data.duration,
-        date: data.date,
-        completed_at: Date.now(),
-        ...(data.workoutId ? { workout_id: data.workoutId } : {}),
+        duration:     data.duration,
+        date:         data.date,
+        ...(data.workoutId ? { workout_id: String(data.workoutId) } : {}),
         ...(data.xpEarned !== undefined ? { xp_earned: data.xpEarned } : {}),
         ...(data.setsData ? { sets_data: data.setsData } : {}),
       });
-      if (logErr) throw new Error(logErr.message);
-
-      // Fetch current profile + all logs to compute new stats
-      const [{ data: profileRows }, { data: logRows }] = await Promise.all([
-        supabase.from("user_profiles").select("*").eq("user_id", user.id),
-        supabase.from("workout_logs").select("date").eq("user_id", user.id),
-      ]);
-
-      const profile = profileRows?.[0] ? mapProfile(profileRows[0] as Record<string, unknown>) : null;
-      const allDates = [...(logRows ?? []).map((l) => (l as Record<string, unknown>).date as string), data.date];
-      const newStreak = computeStreakFromDates(allDates);
-
-      if (profile) {
-        await supabase.from("user_profiles").update({
-          total_xp: (profile.totalXP ?? 0) + (data.xpEarned ?? 0),
-          total_workouts: profile.totalWorkouts + 1,
-          current_streak: newStreak,
-          longest_streak: Math.max(profile.longestStreak, newStreak),
-        }).eq("id", profile.id);
-      }
-
+      if (logError) throw logError;
+    },
+    onSuccess: () => {
       toast({
         title: "Workout Complete!",
-        description: `+${data.xpEarned ?? 0} XP earned. Your progress has been saved.`,
+        description: `Your progress has been saved.`,
       });
-      options?.onSuccess?.();
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to save workout log.", variant: "destructive" });
-      options?.onError?.(e as Error);
-    } finally {
-      setIsPending(false);
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: ["userProgress"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save workout log.",
+        variant: "destructive",
+      });
+    },
+  });
 
-  return { mutate, isPending };
+  return { mutate: mutation.mutateAsync, isPending: mutation.isPending };
 }
 
 // ── User Progress ─────────────────────────────────────────────────────────────
 
 export function useUserProgress() {
   const { user } = useAuth();
-  const [data, setData] = useState<{
-    stats: { isPro: boolean; currentStreak: number; longestStreak: number; totalWorkouts: number };
-    logs: WorkoutLog[];
-    achievements: { id: string; achievementId: string; unlockedAt: number }[];
-    profile: UserProfile | null;
-  }>({
-    stats: { isPro: false, currentStreak: 0, longestStreak: 0, totalWorkouts: 0 },
-    logs: [],
-    achievements: [],
-    profile: null,
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["userProgress", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const [logsRes, achRes, profileRes, subRes] = await Promise.all([
+        supabase.from("workout_logs")      .select("*").eq("user_id", user.id),
+        supabase.from("achievements")      .select("*").eq("user_id", user.id),
+        supabase.from("user_profiles")     .select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_subscriptions").select("*").eq("user_id", user.id).maybeSingle(),
+      ]);
+
+      const logs         = (logsRes.data ?? []).map(rowToLog);
+      const achievements = (achRes.data ?? []) as { id: string; achievementId: string; unlockedAt: number }[];
+      const profile      = profileRes.data ? rowToProfile(profileRes.data) : null;
+      const subscription = subRes.data ? rowToSubscription(subRes.data) : null;
+
+      const computedStreak = computeStreak(logs);
+
+      return { logs, achievements, profile, subscription, computedStreak };
+    },
+    enabled: !!user,
+    staleTime: 30_000,
   });
-  const [isLoading, setIsLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
-    if (!user) { setIsLoading(false); return; }
-    const [logsRes, achRes, profRes] = await Promise.all([
-      supabase.from("workout_logs").select("*").eq("user_id", user.id),
-      supabase.from("achievements").select("*").eq("user_id", user.id),
-      supabase.from("user_profiles").select("*").eq("user_id", user.id),
-    ]);
+  if (!data) {
+    return { data: null, isLoading };
+  }
 
-    const logs = (logsRes.data ?? []).map((r) => mapLog(r as Record<string, unknown>));
-    const achievements = (achRes.data ?? []).map((r) => ({
-      id: (r as Record<string, unknown>).id as string,
-      achievementId: (r as Record<string, unknown>).achievement_id as string,
-      unlockedAt: (r as Record<string, unknown>).unlocked_at as number,
-    }));
-    const profile = profRes.data?.[0] ? mapProfile(profRes.data[0] as Record<string, unknown>) : null;
+  const { logs, achievements, profile, subscription, computedStreak } = data;
 
-    const computedStreak = computeStreakFromDates(logs.map((l) => l.date));
-
-    // Sync stored streak if it drifted
-    if (profile && profile.currentStreak !== computedStreak) {
-      await supabase.from("user_profiles")
-        .update({ current_streak: computedStreak })
-        .eq("id", profile.id);
-      profile.currentStreak = computedStreak;
-    }
-
-    setData({
+  return {
+    data: {
       stats: {
-        isPro: profile?.isPro ?? false,
+        // isPro is sourced from user_subscriptions (write-locked, authoritative).
+        // Never use profile.isPro for access gating — it's for display only.
+        isPro: subscription?.isPro ?? false,
         currentStreak: computedStreak,
         longestStreak: profile?.longestStreak ?? 0,
         totalWorkouts: logs.length,
@@ -281,13 +308,10 @@ export function useUserProgress() {
       logs,
       achievements,
       profile,
-    });
-    setIsLoading(false);
-  }, [user]);
-
-  useEffect(() => { refresh(); }, [refresh]);
-
-  return { data, isLoading, refresh };
+      subscription,
+    },
+    isLoading,
+  };
 }
 
 // ── Pro (Stripe Checkout) ─────────────────────────────────────────────────────
@@ -301,18 +325,12 @@ export function useUpgradePro() {
     if (!user) return;
     setIsPending(true);
     try {
-      const res = await fetch("/api/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, email: user.email, plan }),
-      });
-      const json = await res.json();
-      if (!res.ok || json.error) throw new Error(json.error ?? "Checkout failed");
-      window.location.href = json.url;
-    } catch (e: unknown) {
+      const json = await callApi("/api/create-checkout", { plan });
+      window.location.href = String(json.url);
+    } catch (e) {
       toast({
         title: "Payment Error",
-        description: (e as Error).message ?? "Could not start checkout. Please try again.",
+        description: e instanceof Error ? e.message : "Could not start checkout. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -323,23 +341,30 @@ export function useUpgradePro() {
   return { upgrade, isPending };
 }
 
+// Keep useTogglePro as alias so PaywallDialog compiles without changes
 export const useTogglePro = useUpgradePro;
 
-// ── Quick Pro check ───────────────────────────────────────────────────────────
+// ── Quick Pro check (lightweight) ─────────────────────────────────────────────
+// Reads from user_subscriptions (write-locked to service role — authoritative).
+// Never reads from user_profiles.is_pro for access gating.
 
 export function useIsPro(): boolean {
   const { user } = useAuth();
-  const [isPro, setIsPro] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("user_profiles").select("is_pro").eq("user_id", user.id).maybeSingle()
-      .then(({ data }) => {
-        if (data) setIsPro(Boolean((data as Record<string, unknown>).is_pro));
-      });
-  }, [user]);
-
-  return isPro;
+  const { data } = useQuery({
+    queryKey: ["isPro", user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from("user_subscriptions")
+        .select("is_pro")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data?.is_pro ?? false;
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+  return data ?? false;
 }
 
 // ── Billing Portal ────────────────────────────────────────────────────────────
@@ -348,21 +373,16 @@ export function useManageBilling() {
   const [isPending, setIsPending] = useState(false);
   const { toast } = useToast();
 
-  const openPortal = async (customerId: string) => {
+  // The server finds the Stripe customer from the signed-in user.
+  const openPortal = async () => {
     setIsPending(true);
     try {
-      const res = await fetch("/api/customer-portal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId }),
-      });
-      const json = await res.json();
-      if (!res.ok || json.error) throw new Error(json.error ?? "Portal error");
-      window.location.href = json.url;
-    } catch (e: unknown) {
+      const json = await callApi("/api/customer-portal", {});
+      window.location.href = String(json.url);
+    } catch (e) {
       toast({
         title: "Billing Error",
-        description: (e as Error).message ?? "Could not open billing portal.",
+        description: e instanceof Error ? e.message : "Could not open billing portal. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -371,4 +391,31 @@ export function useManageBilling() {
   };
 
   return { openPortal, isPending };
+}
+
+// ── Account deletion ──────────────────────────────────────────────────────────
+
+export function useDeleteAccount() {
+  const [isPending, setIsPending] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const deleteAccount = async () => {
+    setIsPending(true);
+    try {
+      await callApi("/api/delete-account", { confirm: "DELETE MY ACCOUNT" });
+      queryClient.clear();
+      await supabase.auth.signOut({ scope: "local" });
+      window.location.replace("/landing");
+    } catch (e) {
+      toast({
+        title: "Couldn't delete account",
+        description: e instanceof Error ? e.message : "Please try again.",
+        variant: "destructive",
+      });
+      setIsPending(false);
+    }
+  };
+
+  return { deleteAccount, isPending };
 }

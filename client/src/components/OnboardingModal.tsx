@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { useQueryClient } from "@tanstack/react-query";
 import type { UserProfile } from "@/hooks/use-workouts";
 
 // ── Archetype Data ────────────────────────────────────────────────────────────
@@ -197,6 +198,7 @@ export function OnboardingModal({ profile, defaultAlias, onComplete }: Onboardin
   const [archetypeIndex, setArchetypeIndex] = useState(0);
   const [alias, setAlias] = useState(defaultAlias);
   const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
 
   const archetypes = path === "hero" ? HERO_ARCHETYPES : VILLAIN_ARCHETYPES;
   const chosen = archetypes[archetypeIndex];
@@ -217,13 +219,18 @@ export function OnboardingModal({ profile, defaultAlias, onComplete }: Onboardin
   const handleSave = async () => {
     if (!path || !chosen || !alias.trim()) return;
     setSaving(true);
-    const { error } = await supabase.from("user_profiles").update({
-      path,
-      archetype: chosen.id,
-      alias: alias.trim(),
-      ...(experienceLevel ? { experience_level: experienceLevel } : {}),
-    }).eq("id", profile.id);
-    if (error) throw new Error(error.message);
+    const { error } = await supabase
+      .from("user_profiles")
+      .update({
+        path,
+        archetype:         chosen.id,
+        alias:             alias.trim(),
+        ...(experienceLevel ? { experience_level: experienceLevel } : {}),
+      })
+      .eq("id", profile.id);
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ["userProgress"] });
+    }
     setSaving(false);
     setStep("reveal");
   };
