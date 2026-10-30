@@ -20,11 +20,12 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const loginWithGoogle = () => {
-    supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/landing` },
+  const sendMagicLink = async (email: string): Promise<{ error?: string }> => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/landing` },
     });
+    return error ? { error: error.message } : {};
   };
 
   const logout = () => supabase.auth.signOut();
@@ -33,7 +34,7 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated: !!user,
-    loginWithGoogle,
+    sendMagicLink,
     logout,
     isLoggingOut: false,
   };

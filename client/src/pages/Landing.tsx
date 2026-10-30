@@ -2,9 +2,77 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { InfoCard } from "@/components/ui/info-card";
 import { motion } from "framer-motion";
-import { ArrowRight, Zap, TrendingUp, Flame, Trophy, Lock, ChevronDown } from "lucide-react";
+import { ArrowRight, Zap, TrendingUp, Flame, Trophy, Lock, ChevronDown, X, Mail } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+
+function MagicLinkModal({ onClose }: { onClose: () => void }) {
+  const { sendMagicLink } = useAuth();
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    setError("");
+    const result = await sendMagicLink(email.trim());
+    setLoading(false);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setSent(true);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" onClick={onClose}>
+      <div className="relative w-full max-w-sm bg-card border border-white/10 rounded-2xl p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors">
+          <X className="w-5 h-5" />
+        </button>
+
+        {sent ? (
+          <div className="text-center py-4">
+            <div className="text-4xl mb-4">📬</div>
+            <h2 className="text-xl font-display font-black mb-2">Check your inbox</h2>
+            <p className="text-sm text-muted-foreground">We sent a magic link to <span className="text-foreground font-medium">{email}</span>. Click it to sign in — no password needed.</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                <Mail className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h2 className="text-lg font-display font-black leading-tight">Sign in to HeroSplit</h2>
+                <p className="text-xs text-muted-foreground">No password needed</p>
+              </div>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-white/20"
+              />
+              {error && <p className="text-xs text-red-400">{error}</p>}
+              <Button type="submit" disabled={loading} className="w-full h-11 rounded-xl bg-white text-black hover:bg-gray-100 font-bold text-sm">
+                {loading ? "Sending…" : "Send Magic Link"}
+              </Button>
+            </form>
+            <p className="text-xs text-muted-foreground text-center mt-4">Free to start · No credit card required</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -132,11 +200,12 @@ function AppMockup() {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Landing() {
-  const { loginWithGoogle } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [billingPlan, setBillingPlan] = useState<"annual" | "monthly">("annual");
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      {showAuthModal && <MagicLinkModal onClose={() => setShowAuthModal(false)} />}
 
       {/* ── Subtle top vignette — not orbs, just a hint of depth ── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
@@ -157,7 +226,7 @@ export default function Landing() {
             <Button
               size="sm"
               className="rounded-full px-5 bg-white text-black hover:bg-gray-200 font-semibold"
-              onClick={loginWithGoogle}
+              onClick={() => setShowAuthModal(true)}
             >
               Start Free
             </Button>
@@ -197,7 +266,7 @@ export default function Landing() {
               <Button
                 size="lg"
                 className="h-13 px-8 rounded-full text-base bg-white text-black hover:bg-gray-100 font-bold shadow-[0_0_30px_rgba(255,255,255,0.15)]"
-                onClick={loginWithGoogle}
+                onClick={() => setShowAuthModal(true)}
               >
                 Start for Free <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
@@ -257,7 +326,7 @@ export default function Landing() {
               {
                 step: "01",
                 title: "Choose Your Path",
-                desc: "Sign up with Google in one tap. Pick Hero or Villain. Choose your archetype — Dark Vigilante, Thunder Giant, Void Sorcerer, and more.",
+                desc: "Sign up with your email in seconds. Pick Hero or Villain. Choose your archetype — Dark Vigilante, Thunder Giant, Void Sorcerer, and more.",
                 // Gym floor / equipment — establishes the setting
                 image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop",
                 borderColor: "#22d3ee",
@@ -520,7 +589,7 @@ export default function Landing() {
                 size="lg"
                 variant="outline"
                 className="w-full h-12 rounded-full font-bold mb-8 border-white/20 hover:bg-white/5"
-                onClick={loginWithGoogle}
+                onClick={() => setShowAuthModal(true)}
               >
                 Start Free
               </Button>
@@ -562,7 +631,7 @@ export default function Landing() {
                 <Button
                   size="lg"
                   className="w-full h-12 rounded-full font-bold mb-8 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/30"
-                  onClick={loginWithGoogle}
+                  onClick={() => setShowAuthModal(true)}
                 >
                   Unlock Pro
                 </Button>
@@ -613,11 +682,11 @@ export default function Landing() {
               <Button
                 size="lg"
                 className="h-14 px-10 rounded-full text-lg bg-white text-black hover:bg-gray-100 font-bold shadow-[0_0_40px_rgba(255,255,255,0.15)] transition-all hover:shadow-[0_0_60px_rgba(255,255,255,0.2)]"
-                onClick={loginWithGoogle}
+                onClick={() => setShowAuthModal(true)}
               >
                 Start Training Free <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-              <p className="mt-4 text-sm text-muted-foreground">Google Sign-In · No credit card required</p>
+              <p className="mt-4 text-sm text-muted-foreground">Magic Link Sign-In · No credit card required</p>
             </motion.div>
           </motion.div>
         </div>
@@ -635,7 +704,7 @@ export default function Landing() {
             <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
             <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
             <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
-            <button onClick={loginWithGoogle} className="hover:text-foreground transition-colors">Sign In</button>
+            <button onClick={() => setShowAuthModal(true)} className="hover:text-foreground transition-colors">Sign In</button>
           </div>
         </div>
       </footer>
