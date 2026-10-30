@@ -146,9 +146,7 @@ function computeStreakFromDates(rawDates: string[]): number {
       const d = new Date(expected);
       d.setDate(d.getDate() - 1);
       expected = format(d, "yyyy-MM-dd");
-    } else {
-      break;
-    }
+    } else break;
   }
   return streak;
 }
@@ -272,9 +270,9 @@ export function useUserProgress() {
       if (!user) return null;
 
       const [logsRes, achRes, profileRes, subRes] = await Promise.all([
-        supabase.from("workout_logs")    .select("*").eq("user_id", user.id),
-        supabase.from("achievements")    .select("*").eq("user_id", user.id),
-        supabase.from("user_profiles")   .select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("workout_logs")      .select("*").eq("user_id", user.id),
+        supabase.from("achievements")      .select("*").eq("user_id", user.id),
+        supabase.from("user_profiles")     .select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("user_subscriptions").select("*").eq("user_id", user.id).maybeSingle(),
       ]);
 

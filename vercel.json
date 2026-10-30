@@ -26,5 +26,11 @@
         { "key": "Cache-Control", "value": "no-store" }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/push-send",
+      "schedule": "0 20 * * *"
+    }
   ]
 }

@@ -10,7 +10,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    // PKCE: the OAuth redirect carries a one-time code, not tokens in the URL.
+    // PKCE: the magic link redirect carries a one-time code, not tokens in the URL.
     flowType: "pkce",
   },
 });

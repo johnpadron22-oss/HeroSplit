@@ -1,9 +1,78 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { InfoCard } from "@/components/ui/info-card";
 import { motion } from "framer-motion";
-import { ArrowRight, Zap, TrendingUp, Flame, Trophy, Lock, ChevronDown } from "lucide-react";
+import { ArrowRight, Zap, TrendingUp, Flame, Trophy, Lock, ChevronDown, X, Mail } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+
+function MagicLinkModal({ onClose }: { onClose: () => void }) {
+  const { sendMagicLink } = useAuth();
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    setError("");
+    const result = await sendMagicLink(email.trim());
+    setLoading(false);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setSent(true);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" onClick={onClose}>
+      <div className="relative w-full max-w-sm bg-card border border-white/10 rounded-2xl p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors">
+          <X className="w-5 h-5" />
+        </button>
+
+        {sent ? (
+          <div className="text-center py-4">
+            <div className="text-4xl mb-4">📬</div>
+            <h2 className="text-xl font-display font-black mb-2">Check your inbox</h2>
+            <p className="text-sm text-muted-foreground">We sent a magic link to <span className="text-foreground font-medium">{email}</span>. Click it to sign in — no password needed.</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                <Mail className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h2 className="text-lg font-display font-black leading-tight">Sign in to HeroSplit</h2>
+                <p className="text-xs text-muted-foreground">No password needed</p>
+              </div>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-white/20"
+              />
+              {error && <p className="text-xs text-red-400">{error}</p>}
+              <Button type="submit" disabled={loading} className="w-full h-11 rounded-xl bg-white text-black hover:bg-gray-100 font-bold text-sm">
+                {loading ? "Sending…" : "Send Magic Link"}
+              </Button>
+            </form>
+            <p className="text-xs text-muted-foreground text-center mt-4">Free to start · No credit card required</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -131,11 +200,12 @@ function AppMockup() {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Landing() {
-  const { loginWithGoogle } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [billingPlan, setBillingPlan] = useState<"annual" | "monthly">("annual");
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      {showAuthModal && <MagicLinkModal onClose={() => setShowAuthModal(false)} />}
 
       {/* ── Subtle top vignette — not orbs, just a hint of depth ── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
@@ -156,7 +226,7 @@ export default function Landing() {
             <Button
               size="sm"
               className="rounded-full px-5 bg-white text-black hover:bg-gray-200 font-semibold"
-              onClick={loginWithGoogle}
+              onClick={() => setShowAuthModal(true)}
             >
               Start Free
             </Button>
@@ -167,7 +237,7 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════ */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-28">
+      <section className="max-w-6xl mx-auto px-6 pt-14 pb-16">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Left: copy */}
           <motion.div
@@ -196,7 +266,7 @@ export default function Landing() {
               <Button
                 size="lg"
                 className="h-13 px-8 rounded-full text-base bg-white text-black hover:bg-gray-100 font-bold shadow-[0_0_30px_rgba(255,255,255,0.15)]"
-                onClick={loginWithGoogle}
+                onClick={() => setShowAuthModal(true)}
               >
                 Start for Free <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
@@ -208,7 +278,7 @@ export default function Landing() {
             </motion.div>
 
             {/* Mini stats */}
-            <motion.div variants={fadeUp} className="flex flex-wrap gap-x-6 gap-y-2 mt-10">
+            <motion.div variants={fadeUp} className="flex flex-wrap gap-x-6 gap-y-2 mt-6">
               {[
                 { value: "37", label: "Workouts" },
                 { value: "3", label: "Training Tiers" },
@@ -238,60 +308,72 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           HOW IT WORKS
       ══════════════════════════════════════════════ */}
-      <section className="border-t border-white/5 py-24">
+      <section className="border-t border-white/5 py-14">
         <div className="max-w-5xl mx-auto px-6">
           <motion.div
             variants={stagger}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            className="text-center mb-14"
+            viewport={{ once: true, margin: "-60px" }}
+            className="text-center mb-8"
           >
             <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">How it works</motion.p>
             <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl font-display font-black">Three steps to your first session</motion.h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="flex flex-wrap justify-center gap-6">
             {[
               {
                 step: "01",
-                emoji: "⚔️",
                 title: "Choose Your Path",
-                desc: "Sign up with Google in one tap. Pick Hero or Villain. Choose your archetype — Dark Vigilante, Thunder Giant, Void Sorcerer, and more.",
-                color: "from-cyan-500/10 to-transparent border-cyan-500/20",
-                accent: "text-cyan-400",
+                desc: "Sign up with your email in seconds. Pick Hero or Villain. Choose your archetype — Dark Vigilante, Thunder Giant, Void Sorcerer, and more.",
+                // Gym floor / equipment — establishes the setting
+                image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop",
+                borderColor: "#22d3ee",
+                effectBgColor: "#22d3ee",
+                hoverTextColor: "#09090b",
               },
               {
                 step: "02",
-                emoji: "🏋️",
                 title: "Train & Earn XP",
-                desc: "Log real weights, reps, and sets. Every completed set earns XP. Watch your rank climb from F → D → C → B → A → S → SS → SSS.",
-                color: "from-purple-500/10 to-transparent border-purple-500/20",
-                accent: "text-purple-400",
+                desc: "Log real weights, reps, and sets. Every completed set earns XP. Watch your rank climb from F to D to C to B to A to S to SS to SSS.",
+                // Person lifting / intense training
+                image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&auto=format&fit=crop",
+                borderColor: "#fbbf24",
+                effectBgColor: "#fbbf24",
+                hoverTextColor: "#09090b",
               },
               {
                 step: "03",
-                emoji: "🎁",
                 title: "Level Up & Loot",
                 desc: "Finish a workout and get a loot drop — Common, Rare, Epic, or Legendary. Build your streak. Progress through Foundation, Blueprint, Nemesis.",
-                color: "from-yellow-500/10 to-transparent border-yellow-500/20",
-                accent: "text-yellow-400",
+                // Athletic achievement / celebration
+                image: "https://images.unsplash.com/photo-1549476464-37392f717541?w=600&auto=format&fit=crop",
+                borderColor: "#a855f7",
+                effectBgColor: "#a855f7",
+                hoverTextColor: "#f5f5f5",
               },
-            ].map((item) => (
+            ].map((item, i) => (
               <motion.div
                 key={item.step}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
-                className={cn("p-7 rounded-2xl bg-gradient-to-b border", item.color)}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
               >
-                <div className={cn("text-xs font-black font-mono uppercase tracking-widest mb-4", item.accent)}>
-                  Step {item.step}
-                </div>
-                <div className="text-4xl mb-4">{item.emoji}</div>
-                <h3 className="text-xl font-display font-black mb-3">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                <InfoCard
+                  image={item.image}
+                  title={`${item.step} — ${item.title}`}
+                  description={item.desc}
+                  width={300}
+                  height={358}
+                  imageHeight={162}
+                  borderColor={item.borderColor}
+                  effectBgColor={item.effectBgColor}
+                  hoverTextColor={item.hoverTextColor}
+                  borderBgColor="#09090b"
+                  cardBgColor="#09090b"
+                />
               </motion.div>
             ))}
           </div>
@@ -301,9 +383,9 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           TRAINING TIERS
       ══════════════════════════════════════════════ */}
-      <section className="border-t border-white/5 py-24 bg-white/[0.01]">
+      <section className="border-t border-white/5 py-12 bg-white/[0.01]">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-14">
+          <div className="text-center mb-8">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Progressive system</p>
             <h2 className="text-3xl md:text-4xl font-display font-black">Built to scale with you</h2>
             <p className="text-muted-foreground mt-3 max-w-md mx-auto">Start where you are. Every tier uses <strong className="text-foreground">double progression</strong> — add reps, then add weight. No guesswork.</p>
@@ -403,9 +485,9 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           FEATURES GRID
       ══════════════════════════════════════════════ */}
-      <section className="border-t border-white/5 py-24">
+      <section className="border-t border-white/5 py-12">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-14">
+          <div className="text-center mb-8">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Everything included</p>
             <h2 className="text-3xl md:text-4xl font-display font-black">The full system</h2>
           </div>
@@ -469,9 +551,9 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           PRICING
       ══════════════════════════════════════════════ */}
-      <section id="pricing" className="border-t border-white/5 py-24 bg-white/[0.01]">
+      <section id="pricing" className="border-t border-white/5 py-12 bg-white/[0.01]">
         <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-14">
+          <div className="text-center mb-8">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Pricing</p>
             <h2 className="text-3xl md:text-4xl font-display font-black">Simple. No tricks.</h2>
             <p className="text-muted-foreground mt-3">Start free. Unlock everything for less than a protein bar a week.</p>
@@ -507,7 +589,7 @@ export default function Landing() {
                 size="lg"
                 variant="outline"
                 className="w-full h-12 rounded-full font-bold mb-8 border-white/20 hover:bg-white/5"
-                onClick={loginWithGoogle}
+                onClick={() => setShowAuthModal(true)}
               >
                 Start Free
               </Button>
@@ -549,7 +631,7 @@ export default function Landing() {
                 <Button
                   size="lg"
                   className="w-full h-12 rounded-full font-bold mb-8 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/30"
-                  onClick={loginWithGoogle}
+                  onClick={() => setShowAuthModal(true)}
                 >
                   Unlock Pro
                 </Button>
@@ -581,7 +663,7 @@ export default function Landing() {
       {/* ══════════════════════════════════════════════
           FINAL CTA
       ══════════════════════════════════════════════ */}
-      <section className="border-t border-white/5 py-28">
+      <section className="border-t border-white/5 py-16">
         <div className="max-w-2xl mx-auto px-6 text-center">
           <motion.div
             variants={stagger}
@@ -600,11 +682,11 @@ export default function Landing() {
               <Button
                 size="lg"
                 className="h-14 px-10 rounded-full text-lg bg-white text-black hover:bg-gray-100 font-bold shadow-[0_0_40px_rgba(255,255,255,0.15)] transition-all hover:shadow-[0_0_60px_rgba(255,255,255,0.2)]"
-                onClick={loginWithGoogle}
+                onClick={() => setShowAuthModal(true)}
               >
                 Start Training Free <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
-              <p className="mt-4 text-sm text-muted-foreground">Google Sign-In · No credit card required</p>
+              <p className="mt-4 text-sm text-muted-foreground">Magic Link Sign-In · No credit card required</p>
             </motion.div>
           </motion.div>
         </div>
@@ -622,7 +704,7 @@ export default function Landing() {
             <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
             <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
             <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
-            <button onClick={loginWithGoogle} className="hover:text-foreground transition-colors">Sign In</button>
+            <button onClick={() => setShowAuthModal(true)} className="hover:text-foreground transition-colors">Sign In</button>
           </div>
         </div>
       </footer>

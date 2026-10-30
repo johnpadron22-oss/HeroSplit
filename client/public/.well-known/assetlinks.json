@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.herosplit.app",
+    "sha256_cert_fingerprints": ["B0:C0:C6:36:50:5A:DE:96:67:AB:24:0B:E6:0D:B5:C8:13:11:FE:A5:2E:87:41:0F:4A:24:DC:34:24:05:1D:39"]
+  }
+}]
