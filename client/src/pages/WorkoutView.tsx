@@ -543,7 +543,12 @@ export default function WorkoutView() {
                   {primaryWorked.map((name) => (
                     <span
                       key={name}
-                      className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20"
+                      className={cn(
+                        "px-2.5 py-0.5 rounded-full text-[10px] font-bold border",
+                        isVillain
+                          ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                          : "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                      )}
                     >
                       {name}
                     </span>
@@ -562,9 +567,14 @@ export default function WorkoutView() {
           className="w-full max-w-sm space-y-3"
         >
           {program.notes && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-green-500/5 border border-green-500/20">
-              <TrendingUp className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-green-300/80 leading-snug">{program.notes}</p>
+            <div className={cn(
+              "flex items-start gap-2 p-3 rounded-xl border",
+              isVillain
+                ? "bg-purple-500/5 border-purple-500/20"
+                : "bg-cyan-500/5 border-cyan-500/20"
+            )}>
+              <TrendingUp className={cn("w-4 h-4 shrink-0 mt-0.5", isVillain ? "text-purple-400" : "text-cyan-400")} />
+              <p className={cn("text-xs leading-snug", isVillain ? "text-purple-300/80" : "text-cyan-300/80")}>{program.notes}</p>
             </div>
           )}
           {isFoundation && (
