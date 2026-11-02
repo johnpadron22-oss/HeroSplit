@@ -3,37 +3,47 @@ import { MuscleMap } from "@/components/MuscleMap";
 import type { MuscleGroup, MuscleStatus } from "@/lib/muscles";
 import { MUSCLE_LABELS } from "@/lib/muscles";
 
+type Variant = "hero" | "villain";
+
 interface MuscleGroupCardProps {
   muscle: MuscleGroup;
   status: MuscleStatus;
   /** Total sets from the program targeting this muscle (primary) */
   setCount?: number;
+  /** Matches the workout theme — hero=cyan, villain=purple */
+  variant?: Variant;
   className?: string;
 }
 
-const STATUS_CONFIG = {
-  primary: {
-    label: "Growing",
-    labelColor: "text-green-400",
-    dotColor: "bg-green-500",
-    border: "border-green-500/20",
-    bg: "bg-green-500/5",
-  },
-  secondary: {
-    label: "Focusing",
-    labelColor: "text-yellow-400",
-    dotColor: "bg-yellow-500",
-    border: "border-yellow-500/20",
-    bg: "bg-yellow-500/5",
-  },
-  inactive: {
-    label: "Idle",
-    labelColor: "text-blue-400",
-    dotColor: "bg-blue-500",
-    border: "border-blue-500/20",
-    bg: "bg-blue-500/5",
-  },
-};
+// Primary uses the workout's theme color; secondary uses amber (same as series badges in WorkoutCard)
+function getStatusConfig(variant: Variant = "hero") {
+  const primaryColor = variant === "villain"
+    ? { label: "text-purple-400", dot: "bg-purple-400", border: "border-purple-500/20", bg: "bg-purple-500/5" }
+    : { label: "text-cyan-400",   dot: "bg-cyan-400",   border: "border-cyan-500/20",   bg: "bg-cyan-500/5"   };
+  return {
+    primary: {
+      label: "Primary",
+      labelColor: primaryColor.label,
+      dotColor:   primaryColor.dot,
+      border:     primaryColor.border,
+      bg:         primaryColor.bg,
+    },
+    secondary: {
+      label: "Secondary",
+      labelColor: "text-amber-400",
+      dotColor:   "bg-amber-400",
+      border:     "border-amber-500/20",
+      bg:         "bg-amber-500/5",
+    },
+    inactive: {
+      label: "Idle",
+      labelColor: "text-muted-foreground",
+      dotColor:   "bg-muted",
+      border:     "border-white/5",
+      bg:         "bg-white/[0.02]",
+    },
+  };
+}
 
 // Build a statusMap that only highlights the given muscle
 function buildSingleMuscleStatus(
@@ -57,8 +67,10 @@ export function MuscleGroupCard({
   muscle,
   status,
   setCount,
+  variant = "hero",
   className,
 }: MuscleGroupCardProps) {
+  const STATUS_CONFIG = getStatusConfig(variant);
   const config = STATUS_CONFIG[status];
   const view = BACK_MUSCLES.includes(muscle) ? "back" : "front";
   const statusMap = buildSingleMuscleStatus(muscle, status);
@@ -74,7 +86,7 @@ export function MuscleGroupCard({
     >
       {/* Mini body map */}
       <div className="shrink-0 w-12 h-20">
-        <MuscleMap statusMap={statusMap} view={view} size="sm" className="!h-20" />
+        <MuscleMap statusMap={statusMap} view={view} size="sm" variant={variant} className="!h-20" />
       </div>
 
       {/* Info */}
@@ -82,18 +94,13 @@ export function MuscleGroupCard({
         <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
           {MUSCLE_LABELS[muscle]}
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className={cn("w-2 h-2 rounded-full", config.dotColor)} />
-          <span className={cn("text-sm font-bold", config.labelColor)}>
-            {config.label}
-          </span>
+        <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border w-fit", config.bg, config.border, config.labelColor)}>
+          <span className={cn("w-1.5 h-1.5 rounded-full", config.dotColor)} />
+          {config.label}
         </div>
         {setCount !== undefined && setCount > 0 && (
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-black", config.dotColor)}>
-              {setCount}
-            </span>
-            <span className="text-[10px] text-muted-foreground">Sets to {status === "primary" ? "Growth" : "Focus"}</span>
+          <div className="text-[10px] text-muted-foreground mt-0.5">
+            {setCount} sets
           </div>
         )}
       </div>

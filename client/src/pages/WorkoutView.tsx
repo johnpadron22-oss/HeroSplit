@@ -380,10 +380,10 @@ export default function WorkoutView() {
 
                 {/* Body map */}
                 <div className={cn("rounded-2xl p-4 border", isVillain ? "bg-purple-500/5 border-purple-500/10" : "bg-cyan-500/5 border-cyan-500/10")}>
-                  <MuscleMap statusMap={muscleMap} view="both" size="md" />
+                  <MuscleMap statusMap={muscleMap} view="both" size="md" variant={isVillain ? "villain" : "hero"} />
                   <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500" />Primary</div>
-                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500" />Secondary</div>
+                    <div className="flex items-center gap-1.5"><span className={cn("w-2 h-2 rounded-full", isVillain ? "bg-purple-400" : "bg-cyan-400")} />Primary</div>
+                    <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" />Secondary</div>
                   </div>
                 </div>
 
@@ -400,6 +400,7 @@ export default function WorkoutView() {
                           muscle={muscle}
                           status={status}
                           setCount={setCount || undefined}
+                          variant={isVillain ? "villain" : "hero"}
                         />
                       );
                     })}
@@ -536,7 +537,7 @@ export default function WorkoutView() {
                 <Target className="w-3 h-3" />
                 Muscles Worked
               </div>
-              <MuscleMap statusMap={workedMuscles} view="both" size="md" />
+              <MuscleMap statusMap={workedMuscles} view="both" size="md" variant={isVillain ? "villain" : "hero"} />
               {primaryWorked.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {primaryWorked.map((name) => (

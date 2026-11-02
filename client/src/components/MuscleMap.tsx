@@ -3,12 +3,21 @@ import type { MuscleGroup, MuscleStatus, MuscleTrainingTier } from "@/lib/muscle
 
 // ── Color maps ───────────────────────────────────────────────────────────────
 
-const STATUS_COLORS: Record<MuscleStatus | "none", string> = {
-  primary:   "#22c55e", // green-500
-  secondary: "#eab308", // yellow-500
-  inactive:  "#1e293b", // slate-800 very dark
-  none:      "#0f172a", // slate-900 nearly invisible
-};
+type Variant = "hero" | "villain";
+
+function getStatusColors(variant: Variant = "hero"): Record<MuscleStatus | "none", string> {
+  // Primary uses the workout's theme color (cyan for hero, purple for villain)
+  // — matching the same cyan-500/purple-500 used in WorkoutCard buttons and badges
+  const primary = variant === "villain"
+    ? "rgba(168,85,247,0.85)"  // purple-500
+    : "rgba(6,182,212,0.85)";  // cyan-500
+  return {
+    primary,
+    secondary: "rgba(245,158,11,0.7)", // amber-500 — already used in app for secondary labels
+    inactive:  "#1e293b",
+    none:      "#0f172a",
+  };
+}
 
 const TIER_COLORS: Record<MuscleTrainingTier, string> = {
   gold:      "#f59e0b", // amber-500
@@ -27,6 +36,8 @@ interface MuscleMapProps {
   tierMap?: Partial<Record<MuscleGroup, MuscleTrainingTier>>;
   view?: "front" | "back" | "both";
   size?: "sm" | "md" | "lg";
+  /** Determines primary muscle highlight color — hero=cyan, villain=purple */
+  variant?: Variant;
   className?: string;
 }
 
@@ -34,8 +45,10 @@ interface MuscleMapProps {
 
 function buildColorMap(
   statusMap?: Partial<Record<MuscleGroup, MuscleStatus>>,
-  tierMap?: Partial<Record<MuscleGroup, MuscleTrainingTier>>
+  tierMap?: Partial<Record<MuscleGroup, MuscleTrainingTier>>,
+  variant: Variant = "hero",
 ): MuscleColorMap {
+  const STATUS_COLORS = getStatusColors(variant);
   const out: MuscleColorMap = {};
   if (statusMap) {
     for (const [k, v] of Object.entries(statusMap)) {
@@ -50,7 +63,7 @@ function buildColorMap(
 }
 
 function col(colors: MuscleColorMap, muscle: MuscleGroup): string {
-  return colors[muscle] ?? (Object.keys(colors).length > 0 ? STATUS_COLORS.inactive : "#1e293b");
+  return colors[muscle] ?? (Object.keys(colors).length > 0 ? "#1e293b" : "#1e293b");
 }
 
 // ── SVG Figures ───────────────────────────────────────────────────────────────
@@ -227,9 +240,10 @@ export function MuscleMap({
   tierMap,
   view = "both",
   size = "md",
+  variant = "hero",
   className,
 }: MuscleMapProps) {
-  const colors = buildColorMap(statusMap, tierMap);
+  const colors = buildColorMap(statusMap, tierMap, variant);
   const heightClass = SIZE_CLASSES[size];
 
   if (view === "front") {
