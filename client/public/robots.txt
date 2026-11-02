@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hero-split.vercel.app/sitemap.xml

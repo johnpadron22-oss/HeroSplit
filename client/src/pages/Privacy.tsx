@@ -25,12 +25,11 @@ export default function Privacy() {
 
           <h2>1. Data We Collect</h2>
 
-          <p><strong>Account data (via Google OAuth):</strong></p>
+          <p><strong>Account data (via email magic link):</strong></p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Your Google email address</li>
-            <li>Your Google user ID (used internally to identify your account)</li>
+            <li>Your email address (used to send sign-in links and to identify your account)</li>
           </ul>
-          <p>We do not receive your Google password. We do not access your Google contacts, calendar, Drive, or any other Google services.</p>
+          <p>We do not store your password because sign-in is passwordless — we send a one-time magic link to your email. We do not access any third-party accounts or services on your behalf.</p>
 
           <p><strong>Profile data (created when you use the Service):</strong></p>
           <ul className="list-disc pl-5 space-y-1">
@@ -108,10 +107,10 @@ export default function Privacy() {
                   <td className="py-2.5"><a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-hero hover:underline">vercel.com/legal/privacy-policy</a></td>
                 </tr>
                 <tr>
-                  <td className="py-2.5 pr-4 font-medium text-foreground">Google OAuth</td>
-                  <td className="py-2.5 pr-4">Sign-in authentication only</td>
-                  <td className="py-2.5 pr-4">Email and Google user ID</td>
-                  <td className="py-2.5"><a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-hero hover:underline">policies.google.com/privacy</a></td>
+                  <td className="py-2.5 pr-4 font-medium text-foreground">Supabase Auth</td>
+                  <td className="py-2.5 pr-4">Email magic link sign-in</td>
+                  <td className="py-2.5 pr-4">Email address (used to send sign-in links)</td>
+                  <td className="py-2.5"><a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-hero hover:underline">supabase.com/privacy</a></td>
                 </tr>
               </tbody>
             </table>

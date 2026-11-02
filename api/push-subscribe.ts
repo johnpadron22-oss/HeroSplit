@@ -1,31 +1,37 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createClient } from "@supabase/supabase-js";
-import { checkRateLimit } from "./_rateLimit";
+import type { VercelRequest, VercelResponse } from "./_lib/vercel.js";
+import { z } from "zod";
+import { getAdmin } from "./_lib/deps.js";
+import { applyCors, clientIp, parseBody, requireMethod, sendError } from "./_lib/http.js";
+import { requireUser } from "./_lib/auth.js";
+import { enforceRateLimit } from "./_lib/rateLimit.js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const SubscribeBody = z.object({
+  subscription: z.object({
+    endpoint: z.string().url().max(2048),
+    keys: z.object({
+      p256dh: z.string().min(1).max(256),
+      auth: z.string().min(1).max(64),
+    }),
+  }),
+}).strict();
+
+const UnsubscribeBody = z.object({
+  endpoint: z.string().url().max(2048),
+}).strict();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ?? "unknown";
-  if (!checkRateLimit(`push-sub:${ip}`, 10, 60_000).allowed) {
-    return res.status(429).json({ error: "Too many requests" });
-  }
+  if (applyCors(req, res, ["POST", "DELETE"])) return;
+  try {
+    requireMethod(req, ["POST", "DELETE"]);
+    await enforceRateLimit("push-sub-ip", clientIp(req), 20, 60);
+    const user = await requireUser(req);
+    await enforceRateLimit("push-sub-user", user.id, 10, 60);
 
-  if (req.method === "POST") {
-    const { userId, subscription } = req.body ?? {};
-    if (
-      typeof userId !== "string" ||
-      typeof subscription?.endpoint !== "string" ||
-      typeof subscription?.keys?.p256dh !== "string" ||
-      typeof subscription?.keys?.auth !== "string"
-    ) {
-      return res.status(400).json({ error: "Invalid subscription payload" });
-    }
+    if (req.method === "POST") {
+      const { subscription } = parseBody(req, SubscribeBody);
 
-    try {
-      const { data: existing } = await supabase
+      const admin = getAdmin();
+      const { data: existing } = await admin
         .from("push_subscriptions")
         .select("id")
         .eq("endpoint", subscription.endpoint)
@@ -35,8 +41,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ ok: true, existed: true });
       }
 
-      const { error } = await supabase.from("push_subscriptions").insert({
-        user_id: userId,
+      const { error } = await admin.from("push_subscriptions").insert({
+        user_id: user.id,
         endpoint: subscription.endpoint,
         p256dh: subscription.keys.p256dh,
         auth: subscription.keys.auth,
@@ -45,32 +51,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (error) throw error;
 
       return res.status(201).json({ ok: true });
-    } catch (err) {
-      console.error("[push-subscribe] POST error:", err);
-      return res.status(500).json({ error: "Failed to save subscription" });
     }
+
+    // DELETE
+    const { endpoint } = parseBody(req, UnsubscribeBody);
+    const { error } = await getAdmin()
+      .from("push_subscriptions")
+      .delete()
+      .eq("endpoint", endpoint)
+      .eq("user_id", user.id);
+    if (error) throw error;
+
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    return sendError(res, "push-subscribe", err);
   }
-
-  if (req.method === "DELETE") {
-    const { userId, endpoint } = req.body ?? {};
-    if (typeof userId !== "string" || typeof endpoint !== "string") {
-      return res.status(400).json({ error: "userId and endpoint required" });
-    }
-
-    try {
-      const { error } = await supabase
-        .from("push_subscriptions")
-        .delete()
-        .eq("endpoint", endpoint)
-        .eq("user_id", userId);
-      if (error) throw error;
-
-      return res.status(200).json({ ok: true });
-    } catch (err) {
-      console.error("[push-subscribe] DELETE error:", err);
-      return res.status(500).json({ error: "Failed to remove subscription" });
-    }
-  }
-
-  return res.status(405).json({ error: "Method not allowed" });
 }
