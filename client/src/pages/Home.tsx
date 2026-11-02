@@ -459,6 +459,12 @@ export default function Home() {
 
                   const hasAnyData = Object.values(counts).some((c) => c > 0);
 
+                  const tierCounts = {
+                    gold:   Object.values(tierMap).filter(t => t === "gold").length,
+                    bronze: Object.values(tierMap).filter(t => t === "bronze").length,
+                    wood:   Object.values(tierMap).filter(t => t === "wood").length,
+                  };
+
                   const topMuscles = (Object.entries(counts) as [MuscleGroup, number][])
                     .filter(([, c]) => c > 0)
                     .sort(([, a], [, b]) => b - a)
@@ -466,20 +472,33 @@ export default function Home() {
 
                   return (
                     <div className="bg-card border border-white/5 p-6 rounded-2xl space-y-5">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold">Muscle Training Map</h3>
-                        {hasAnyData && (
-                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />Gold 5+</span>
-                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-700 inline-block" />Bronze 2–4</span>
-                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-900 inline-block" />Wood 1</span>
-                          </div>
-                        )}
-                      </div>
+                      <h3 className="text-lg font-bold">Muscle Training Map</h3>
 
                       {hasAnyData ? (
                         <>
                           <MuscleMap tierMap={tierMap} view="both" size="lg" />
+
+                          {/* Tier counts — matches reference app style */}
+                          <div className="flex items-center justify-center gap-3">
+                            {tierCounts.gold > 0 && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                Gold: {tierCounts.gold}
+                              </span>
+                            )}
+                            {tierCounts.bronze > 0 && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                                Bronze: {tierCounts.bronze}
+                              </span>
+                            )}
+                            {tierCounts.wood > 0 && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-yellow-900/30 text-yellow-600 border border-yellow-800/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-yellow-700" />
+                                Wood: {tierCounts.wood}
+                              </span>
+                            )}
+                          </div>
 
                           {topMuscles.length > 0 && (
                             <div className="space-y-2 pt-2 border-t border-white/5">
@@ -489,14 +508,14 @@ export default function Home() {
                                   const tier = countToTier(count);
                                   const barColor =
                                     tier === "gold"   ? "bg-amber-500" :
-                                    tier === "bronze" ? "bg-orange-700" : "bg-yellow-900";
+                                    tier === "bronze" ? "bg-orange-600" : "bg-yellow-800";
                                   const maxCount = topMuscles[0][1];
                                   return (
                                     <div key={muscle} className="flex items-center gap-3">
                                       <div className="w-24 text-xs text-muted-foreground shrink-0">
                                         {MUSCLE_LABELS[muscle]}
                                       </div>
-                                      <div className="flex-1 bg-white/5 rounded-full h-2 overflow-hidden">
+                                      <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
                                         <div
                                           className={cn("h-full rounded-full transition-all", barColor)}
                                           style={{ width: `${(count / maxCount) * 100}%` }}
