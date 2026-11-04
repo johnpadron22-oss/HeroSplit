@@ -30,7 +30,7 @@ export default function Privacy() {
             <li>Your email address (used to send a one-time sign-in link)</li>
             <li>An internal user ID generated when you first sign in</li>
           </ul>
-          <p>We never receive or store a password. Magic links expire after a short window and can only be used once.</p>
+          <p>We never receive or store a password. Magic links expire after a short window and can only be used once. We do not access any third-party accounts or services on your behalf.</p>
 
           <p><strong>Profile data (created when you use the Service):</strong></p>
           <ul className="list-disc pl-5 space-y-1">
@@ -108,10 +108,10 @@ export default function Privacy() {
                   <td className="py-2.5"><a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-hero hover:underline">vercel.com/legal/privacy-policy</a></td>
                 </tr>
                 <tr>
-                  <td className="py-2.5 pr-4 font-medium text-foreground">Google OAuth</td>
-                  <td className="py-2.5 pr-4">Sign-in authentication only</td>
-                  <td className="py-2.5 pr-4">Email and Google user ID</td>
-                  <td className="py-2.5"><a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-hero hover:underline">policies.google.com/privacy</a></td>
+                  <td className="py-2.5 pr-4 font-medium text-foreground">Supabase Auth</td>
+                  <td className="py-2.5 pr-4">Email magic link sign-in</td>
+                  <td className="py-2.5 pr-4">Email address (used to send sign-in links)</td>
+                  <td className="py-2.5"><a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-hero hover:underline">supabase.com/privacy</a></td>
                 </tr>
               </tbody>
             </table>

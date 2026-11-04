@@ -10,7 +10,7 @@ const SubscribeBody = z.object({
     endpoint: z.string().url().max(2048),
     keys: z.object({
       p256dh: z.string().min(1).max(256),
-      auth:   z.string().min(1).max(64),
+      auth: z.string().min(1).max(64),
     }),
   }),
 }).strict();
@@ -44,10 +44,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const { error } = await admin.from("push_subscriptions").insert({
-        user_id:    user.id,
-        endpoint:   subscription.endpoint,
-        p256dh:     subscription.keys.p256dh,
-        auth:       subscription.keys.auth,
+        user_id: user.id,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
         created_at: Date.now(),
       });
       if (error) throw error;
