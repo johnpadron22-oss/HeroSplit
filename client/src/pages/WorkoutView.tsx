@@ -4,6 +4,7 @@ import { useWorkout, useCreateLog, useIsPro } from "@/hooks/use-workouts";
 import { PaywallDialog } from "@/components/PaywallDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft, CheckCircle, ChevronRight, Dumbbell,
@@ -123,9 +124,22 @@ export default function WorkoutView() {
   // ── Derived ─────────────────────────────────────────────────────────────────
 
   if (isLoading) {
+    // Detail 1: skeleton loader for workout page instead of a full-page spinner
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background p-6 max-w-2xl mx-auto space-y-6 pt-12">
+        <Skeleton className="h-8 w-32 rounded-full" />
+        <Skeleton className="h-14 w-3/4 rounded-xl" />
+        <Skeleton className="h-5 w-full rounded" />
+        <Skeleton className="h-5 w-5/6 rounded" />
+        <div className="flex gap-3 pt-4">
+          <Skeleton className="h-10 w-28 rounded-full" />
+          <Skeleton className="h-10 w-28 rounded-full" />
+        </div>
+        <div className="space-y-3 pt-6">
+          {Array.from({ length: 5 }, (_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-xl" />
+          ))}
+        </div>
       </div>
     );
   }

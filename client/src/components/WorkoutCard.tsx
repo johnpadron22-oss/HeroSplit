@@ -1,8 +1,9 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "wouter";
 import { AlertTriangle, ArrowRight, Activity, Clock, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Workout } from "@/hooks/use-workouts";
+import { usePrefetchWorkout } from "@/hooks/use-workouts";
 import { cn } from "@/lib/utils";
 
 interface WorkoutCardProps {
@@ -25,13 +26,18 @@ function isTooAdvanced(difficulty: string, level?: string): boolean {
 export function WorkoutCard({ workout, isLocked = false, onUnlock, experienceLevel }: WorkoutCardProps) {
   const isVillain = workout.type === "villain" || workout.type === "anime";
   const showWarning = isTooAdvanced(workout.difficulty, experienceLevel);
+  const prefetch = usePrefetchWorkout();
+  // Detail 11: interruptible animations — respect reduced-motion preference
+  const shouldReduce = useReducedMotion();
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
+      whileHover={shouldReduce ? {} : { y: -4 }}
       transition={{ duration: 0.3 }}
+      // Detail 7: pre-fetch the workout program as soon as the user hovers
+      onHoverStart={() => !isLocked && prefetch(workout.slug)}
       className={cn(
         "relative overflow-hidden rounded-2xl border bg-card shadow-lg transition-all flex flex-col",
         isVillain
@@ -106,16 +112,16 @@ export function WorkoutCard({ workout, isLocked = false, onUnlock, experienceLev
           </div>
         </div>
 
-        {/* CTA */}
+        {/* CTA — Detail 13: min 44px tap target for gym use */}
         {isLocked ? (
-          <Button onClick={onUnlock} variant="secondary" className="w-full font-semibold">
+          <Button onClick={onUnlock} variant="secondary" className="w-full font-semibold min-h-[44px]">
             Unlock Pro
           </Button>
         ) : (
           <Link href={`/workout/${workout.slug}`} className="w-full">
             <Button
               className={cn(
-                "w-full font-semibold transition-all",
+                "w-full font-semibold transition-all min-h-[44px]",
                 isVillain
                   ? "bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/20"
                   : "bg-cyan-600 hover:bg-cyan-500 text-black shadow-lg shadow-cyan-900/20"

@@ -52,6 +52,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Detail 15: email autocomplete helps password managers fill the field */}
               <input
                 type="email"
                 placeholder="your@email.com"
@@ -59,6 +60,8 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoFocus
+                autoComplete="email"
+                inputMode="email"
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-white/20"
               />
               {error && <p className="text-xs text-red-400">{error}</p>}

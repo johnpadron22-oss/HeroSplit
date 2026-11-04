@@ -4,6 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── View Transitions (Detail 9) ─────────────────────────────────────── */
+@view-transition { navigation: auto; }
+
 :root {
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', sans-serif;
@@ -52,9 +55,14 @@
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/20;
     font-family: var(--font-body);
+    /* Detail 14: safe-area insets — ensure content clears notch + home bar */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+    /* Detail 17: balanced headlines — prevents orphaned last word */
+    text-wrap: balance;
     @apply font-bold tracking-tight;
   }
 }
@@ -72,16 +80,53 @@
   .bg-villain {
     background-color: hsl(var(--villain));
   }
-  
+
   .glass-panel {
     @apply bg-background/60 backdrop-blur-md border border-white/5 shadow-xl;
   }
-  
+
   .hero-gradient {
     background: linear-gradient(135deg, hsl(224 71% 4%) 0%, hsl(190 90% 50% / 0.1) 100%);
   }
-  
+
   .villain-gradient {
     background: linear-gradient(135deg, hsl(224 71% 4%) 0%, hsl(280 80% 60% / 0.1) 100%);
   }
+
+  /* Detail 16: tabular numbers — same-width digits for stats, timers, XP */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Detail 17: balanced headlines utility (also applied to h1-h6 in base) */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Detail 14: safe-area sticky header helper */
+  .safe-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+  .safe-bottom {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+
+  /* Detail 18: smooth corners via higher border-radius + subtle squircle feel */
+  .smooth-corners {
+    border-radius: calc(var(--radius) * 1.33);
+  }
+}
+
+/* Detail 11: interruptible animations — reduce-motion respected globally */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Keep view transitions off for reduced-motion users */
+  @view-transition { navigation: none; }
 }
