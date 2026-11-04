@@ -35,12 +35,12 @@ export default function Terms() {
 
           <h2>3. Your Account</h2>
           <p>
-            You sign in using Google OAuth. You are responsible for all activity that occurs under your account. You must not share your account credentials or allow others to access your account. Notify us immediately at <a href="mailto:johnpadron22@gmail.com" className="text-hero hover:underline">johnpadron22@gmail.com</a> if you believe your account has been compromised.
+            You sign in using a passwordless email magic link sent to your email address. You are responsible for all activity that occurs under your account. You must keep access to your email secure. Notify us immediately at <a href="mailto:johnpadron22@gmail.com" className="text-hero hover:underline">johnpadron22@gmail.com</a> if you believe your account has been compromised.
           </p>
 
           <h2>4. Free and Pro Plans</h2>
           <p>
-            <strong>Free plan:</strong> Access to Hero workouts, Foundation Series, Blueprint Series, XP progression, streaks, and loot drops at no charge.
+            <strong>Free plan:</strong> Access to four Comics Hero workout programs (Night Acrobat, Agile Climber, Night Detective, and Solar Sentinel), XP progression, streaks, and loot drops at no charge.
           </p>
           <p>
             <strong>Pro plan:</strong> Adds Villain Tier workouts, 10 Anime Arc programs, Nemesis Series (Push/Pull/Legs + Hypertrophy), and full workout history with sets and weights. Pro is billed monthly ($4.99/month) or annually ($39.99/year), charged via Stripe.
@@ -93,7 +93,7 @@ export default function Terms() {
             The Service, including its design, code, workout programs, XP system, and all original content, is owned by HeroSplit and protected by copyright and other intellectual property laws. You may not copy, reproduce, distribute, or create derivative works from any part of the Service without our written permission.
           </p>
           <p>
-            Character names and themes inspired by existing franchises (e.g., Dragon Ball, Naruto, Jujutsu Kaisen) are used for descriptive and thematic purposes. HeroSplit is not affiliated with, endorsed by, or sponsored by the owners of those franchises.
+            Workout program themes are original, superhero- and anime-inspired creations. HeroSplit is an independent product and is not affiliated with, endorsed by, or sponsored by any anime studio, comic book publisher, or entertainment franchise.
           </p>
 
           <h2>9. Termination</h2>

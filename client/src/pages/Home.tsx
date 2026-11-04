@@ -3,6 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkouts, useUserProgress, useManageBilling } from "@/hooks/use-workouts";
 import { useAuth } from "@/hooks/use-auth";
 import { WorkoutCard } from "@/components/WorkoutCard";
+import { WorkoutGridSkeleton } from "@/components/WorkoutCardSkeleton";
+import { CommandMenu } from "@/components/CommandMenu";
 import { PaywallDialog } from "@/components/PaywallDialog";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { OnboardingModal } from "@/components/OnboardingModal";
@@ -10,7 +12,7 @@ import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
 import { DeleteAccountCard } from "@/components/DeleteAccountCard";
 import { MuscleMap } from "@/components/MuscleMap";
-import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus, Bell, BellOff } from "lucide-react";
+import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus, Bell, BellOff, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -101,9 +103,16 @@ export default function Home() {
     !progress.profile.archetype;
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-8">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full glass-panel border-b border-white/5">
+    <div className="min-h-screen bg-background pb-20 md:pb-8 safe-bottom">
+      {/* Detail 3: Command palette — Cmd/Ctrl+K */}
+      <CommandMenu
+        isPro={isPro}
+        onNavigate={setActiveTab}
+        onUpgrade={() => setShowPaywall(true)}
+      />
+
+      {/* Header — Detail 14: safe-top handles notch clearance; h-16 + padding = comfortable hit area */}
+      <header className="sticky top-0 z-50 w-full glass-panel border-b border-white/5 safe-top">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="font-display font-black italic tracking-tighter text-xl">
             <span className="text-hero">HERO</span>
@@ -111,25 +120,45 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Detail 3: Cmd+K search shortcut hint */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden md:flex size-11 text-muted-foreground hover:text-foreground"
+              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
+              title="Search (⌘K)"
+              aria-label="Open command palette (⌘K)"
+            >
+              <Search className="w-4 h-4" />
+            </Button>
+
+            {/* Detail 13: size-11 = 44px tap target on icon buttons */}
             {/* Push notification bell — hidden if unsupported */}
             {permission !== "unsupported" && (
               <Button
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "transition-colors",
+                  "size-11 transition-colors",
                   isSubscribed
                     ? "text-cyan-400 hover:text-cyan-300"
                     : "text-muted-foreground hover:text-foreground"
                 )}
                 onClick={handlePushToggle}
                 disabled={pushLoading || permission === "denied"}
-                title={
+                aria-label={
                   permission === "denied"
                     ? "Notifications blocked — enable in browser settings"
                     : isSubscribed
                     ? "Disable streak reminders"
                     : "Enable streak reminders"
+                }
+                title={
+                  permission === "denied"
+                    ? "Notifications blocked"
+                    : isSubscribed
+                    ? "Disable reminders"
+                    : "Enable reminders"
                 }
               >
                 {isSubscribed ? (
@@ -144,8 +173,9 @@ export default function Home() {
             <Button
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:text-foreground"
+              className="size-11 text-muted-foreground hover:text-foreground"
               onClick={() => setShowFeedback(true)}
+              aria-label="Share feedback"
               title="Share feedback"
             >
               <MessageSquarePlus className="w-5 h-5" />
@@ -154,8 +184,9 @@ export default function Home() {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="md:hidden size-11"
               onClick={logout}
+              aria-label="Sign out"
             >
               <LogOut className="w-5 h-5" />
             </Button>
@@ -229,10 +260,9 @@ export default function Home() {
               </div>
             )}
 
+            {/* Detail 1: skeleton loaders replace spinner for workout grid */}
             {loadingHero ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-              </div>
+              <WorkoutGridSkeleton count={6} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {heroWorkouts.map((workout) => (
@@ -280,9 +310,7 @@ export default function Home() {
             )}
 
             {loadingAnime ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-              </div>
+              <WorkoutGridSkeleton count={6} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {animeWorkouts.map((workout) => (
@@ -330,9 +358,7 @@ export default function Home() {
             )}
 
             {loadingVillain ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-              </div>
+              <WorkoutGridSkeleton count={6} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {villainWorkouts.map((workout) => (
@@ -351,8 +377,32 @@ export default function Home() {
           {/* === PROGRESS === */}
           <TabsContent value="progress" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {loadingProgress ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              /* Detail 1: progress skeleton — shows realistic layout while loading */
+              <div className="space-y-4">
+                {/* Skeleton: profile card */}
+                <div className="bg-card border border-white/5 p-6 rounded-2xl space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-full bg-muted animate-pulse" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-5 w-1/3 bg-muted animate-pulse rounded" />
+                      <div className="h-3 w-1/4 bg-muted animate-pulse rounded" />
+                    </div>
+                  </div>
+                </div>
+                {/* Skeleton: stats row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {Array.from({ length: 4 }, (_, i) => (
+                    <div key={i} className="bg-card border border-white/5 p-4 rounded-xl space-y-2">
+                      <div className="h-3 w-16 bg-muted animate-pulse rounded" />
+                      <div className="h-8 w-12 bg-muted animate-pulse rounded" />
+                    </div>
+                  ))}
+                </div>
+                {/* Skeleton: chart */}
+                <div className="bg-card border border-white/5 p-6 rounded-2xl">
+                  <div className="h-4 w-32 bg-muted animate-pulse rounded mb-4" />
+                  <div className="h-32 w-full bg-muted animate-pulse rounded-xl" />
+                </div>
               </div>
             ) : (progress?.logs ?? []).length === 0 ? (
               /* ── Empty state ── */
@@ -408,11 +458,12 @@ export default function Home() {
 
                 {/* Quick stats row */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {/* Detail 16: tabular-nums keeps stat digits aligned as they change */}
                   <div className="bg-card border border-white/5 p-4 rounded-xl">
                     <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
                       <Flame className="w-4 h-4 text-orange-500" /> Streak
                     </div>
-                    <div className="text-3xl font-display font-bold">
+                    <div className="text-3xl font-display font-bold tabular-nums">
                       {progress?.stats?.currentStreak ?? 0}
                     </div>
                   </div>
@@ -420,7 +471,7 @@ export default function Home() {
                     <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
                       <Trophy className="w-4 h-4 text-yellow-500" /> Best
                     </div>
-                    <div className="text-3xl font-display font-bold">
+                    <div className="text-3xl font-display font-bold tabular-nums">
                       {progress?.stats?.longestStreak ?? 0}
                     </div>
                   </div>
@@ -428,7 +479,7 @@ export default function Home() {
                     <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
                       <Dumbbell className="w-4 h-4 text-cyan-500" /> Sessions
                     </div>
-                    <div className="text-3xl font-display font-bold">
+                    <div className="text-3xl font-display font-bold tabular-nums">
                       {progress?.stats?.totalWorkouts ?? 0}
                     </div>
                   </div>
@@ -436,7 +487,7 @@ export default function Home() {
                     <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
                       <Zap className="w-4 h-4 text-yellow-400" /> Total XP
                     </div>
-                    <div className="text-3xl font-display font-bold">
+                    <div className="text-3xl font-display font-bold tabular-nums">
                       {(progress?.profile?.totalXP ?? 0).toLocaleString()}
                     </div>
                   </div>
