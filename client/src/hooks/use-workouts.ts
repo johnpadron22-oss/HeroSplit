@@ -212,6 +212,10 @@ export function useWorkout(slug: string) {
 
 // ── Logs ─────────────────────────────────────────────────────────────────────
 
+// Detail 19: idempotency — track in-flight log keys so a double-tap doesn't
+// insert twice. The set is cleared on success/error.
+const _pendingLogKeys = new Set<string>();
+
 export function useCreateLog() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -228,17 +232,53 @@ export function useCreateLog() {
     }) => {
       if (!user) throw new Error("Not authenticated");
 
-      // user_id and completed_at are set by the database from the session.
-      // XP, streaks and totals are recomputed by a database trigger.
-      const { error: logError } = await supabase.from("workout_logs").insert({
-        workout_name: data.workoutName,
-        duration:     data.duration,
-        date:         data.date,
-        ...(data.workoutId ? { workout_id: String(data.workoutId) } : {}),
-        ...(data.xpEarned !== undefined ? { xp_earned: data.xpEarned } : {}),
-        ...(data.setsData ? { sets_data: data.setsData } : {}),
+      // Detail 19: idempotency key — one log per workout-name + date combination.
+      // Prevents double-logging if the button is tapped twice or the component
+      // re-renders while the request is in flight.
+      const idempotencyKey = `${user.id}:${data.workoutName}:${data.date}`;
+      if (_pendingLogKeys.has(idempotencyKey)) return;
+      _pendingLogKeys.add(idempotencyKey);
+
+      try {
+        // user_id and completed_at are set by the database from the session.
+        // XP, streaks and totals are recomputed by a database trigger.
+        const { error: logError } = await supabase.from("workout_logs").insert({
+          workout_name: data.workoutName,
+          duration:     data.duration,
+          date:         data.date,
+          ...(data.workoutId ? { workout_id: String(data.workoutId) } : {}),
+          ...(data.xpEarned !== undefined ? { xp_earned: data.xpEarned } : {}),
+          ...(data.setsData ? { sets_data: data.setsData } : {}),
+        });
+        if (logError) throw logError;
+      } finally {
+        _pendingLogKeys.delete(idempotencyKey);
+      }
+    },
+    // Detail 2: optimistic update — add a fake log immediately so the progress
+    // tab reflects the workout before the server round-trip completes.
+    onMutate: async (data) => {
+      if (!user) return;
+      await queryClient.cancelQueries({ queryKey: ["userProgress", user.id] });
+      const previous = queryClient.getQueryData(["userProgress", user.id]);
+
+      queryClient.setQueryData(["userProgress", user.id], (old: ReturnType<typeof queryClient.getQueryData>) => {
+        if (!old || typeof old !== "object") return old;
+        const prev = old as { logs?: WorkoutLog[]; [k: string]: unknown };
+        const optimisticLog: WorkoutLog = {
+          id: `optimistic-${Date.now()}`,
+          userId: user.id,
+          workoutName: data.workoutName,
+          date: data.date,
+          duration: data.duration,
+          completedAt: Date.now(),
+          xpEarned: data.xpEarned,
+          setsData: data.setsData,
+        };
+        return { ...prev, logs: [optimisticLog, ...(prev.logs ?? [])] };
       });
-      if (logError) throw logError;
+
+      return { previous };
     },
     onSuccess: () => {
       toast({
@@ -247,7 +287,11 @@ export function useCreateLog() {
       });
       queryClient.invalidateQueries({ queryKey: ["userProgress"] });
     },
-    onError: () => {
+    // Detail 2: rollback the optimistic update on failure
+    onError: (_err, _data, context) => {
+      if (user && context?.previous !== undefined) {
+        queryClient.setQueryData(["userProgress", user.id], context.previous);
+      }
       toast({
         title: "Error",
         description: "Failed to save workout log.",
@@ -394,6 +438,22 @@ export function useManageBilling() {
 }
 
 // ── Account deletion ──────────────────────────────────────────────────────────
+
+// Detail 7: pre-fetch workout on card hover so the page is ready before the click
+export function usePrefetchWorkout() {
+  const queryClient = useQueryClient();
+  return (slug: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ["workout", slug],
+      queryFn: async () => {
+        const { data, error } = await supabase.rpc("get_workout", { p_slug: slug });
+        if (error) throw error;
+        return data ? rowToWorkout(data as Record<string, unknown>) : null;
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+  };
+}
 
 export function useDeleteAccount() {
   const [isPending, setIsPending] = useState(false);
