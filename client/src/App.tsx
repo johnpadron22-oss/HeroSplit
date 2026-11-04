@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 // the auth check already shows, so there's no visible flash.
 const Home        = lazy(() => import("@/pages/Home"));
 const Landing     = lazy(() => import("@/pages/Landing"));
+const Onboarding  = lazy(() => import("@/pages/Onboarding"));
 const WorkoutView = lazy(() => import("@/pages/WorkoutView"));
 const Terms       = lazy(() => import("@/pages/Terms"));
 const Privacy     = lazy(() => import("@/pages/Privacy"));
@@ -31,16 +32,20 @@ function Router() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Switch>
+        <Route path="/onboarding">
+          {isAuthenticated ? <Onboarding /> : <Onboarding />}
+        </Route>
+
         <Route path="/landing">
           {isAuthenticated ? <Redirect to="/" /> : <Landing />}
         </Route>
 
         <Route path="/">
-          {isAuthenticated ? <Home /> : <Redirect to="/landing" />}
+          {isAuthenticated ? <Home /> : <Redirect to="/onboarding" />}
         </Route>
 
         <Route path="/workout/:slug">
-          {isAuthenticated ? <WorkoutView /> : <Redirect to="/landing" />}
+          {isAuthenticated ? <WorkoutView /> : <Redirect to="/onboarding" />}
         </Route>
 
         <Route path="/terms" component={Terms} />
