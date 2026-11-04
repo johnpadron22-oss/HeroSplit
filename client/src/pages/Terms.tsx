@@ -14,7 +14,7 @@ export default function Terms() {
           <h1 className="text-3xl font-display font-black mb-2">
             <span className="text-hero">HERO</span>SPLIT — Terms of Service
           </h1>
-          <p className="text-sm text-muted-foreground">Effective date: September 8, 2026</p>
+          <p className="text-sm text-muted-foreground">Effective date: November 4, 2026</p>
         </div>
 
         <div className="prose prose-invert prose-sm max-w-none space-y-8 text-muted-foreground leading-relaxed [&_h2]:text-foreground [&_h2]:font-display [&_h2]:font-black [&_h2]:text-lg [&_h2]:mt-10 [&_h2]:mb-3 [&_strong]:text-foreground">
