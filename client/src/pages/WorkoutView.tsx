@@ -14,7 +14,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
-import { LootDrop } from "@/components/LootDrop";
 import { MuscleMap } from "@/components/MuscleMap";
 import { MuscleGroupCard } from "@/components/MuscleGroupCard";
 import { getProgramMuscles, getExerciseMuscles, MUSCLE_LABELS } from "@/lib/muscles";
@@ -89,9 +88,6 @@ export default function WorkoutView() {
 
   // XP
   const [xpEarned, setXpEarned] = useState(0);
-
-  // Loot drop
-  const [showLoot, setShowLoot] = useState(false);
 
   // ── Timers ──────────────────────────────────────────────────────────────────
 
@@ -270,9 +266,6 @@ export default function WorkoutView() {
       origin: { y: 0.6 },
       colors: isVillain ? ["#a855f7", "#7e22ce", "#ec4899"] : ["#22d3ee", "#0891b2", "#facc15"],
     });
-
-    // Show loot drop after short delay
-    setTimeout(() => setShowLoot(true), 1200);
 
     // Build setsData: map exercise index → exercise name + completed sets
     const setsData = exercises
@@ -479,7 +472,6 @@ export default function WorkoutView() {
       .slice(0, 4);
 
     return (
-      <>
       <div className="min-h-screen bg-background flex flex-col items-center pb-10 pt-8 px-4">
         {/* Trophy header */}
         <motion.div
@@ -614,11 +606,6 @@ export default function WorkoutView() {
           </Link>
         </motion.div>
       </div>
-
-      {showLoot && (
-        <LootDrop isVillain={isVillain} onClose={() => setShowLoot(false)} />
-      )}
-      </>
     );
   }
 
