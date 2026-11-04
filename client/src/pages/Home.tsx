@@ -4,6 +4,7 @@ import { useWorkouts, useUserProgress, useManageBilling } from "@/hooks/use-work
 import { useAuth } from "@/hooks/use-auth";
 import { WorkoutCard } from "@/components/WorkoutCard";
 import { WorkoutGridSkeleton } from "@/components/WorkoutCardSkeleton";
+import { Leaderboard } from "@/components/Leaderboard";
 import { CommandMenu } from "@/components/CommandMenu";
 import { PaywallDialog } from "@/components/PaywallDialog";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
@@ -213,17 +214,20 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-4 max-w-xl mx-auto p-1 bg-white/5 rounded-full">
-            <TabsTrigger value="browse" className="rounded-full data-[state=active]:bg-hero data-[state=active]:text-black font-semibold">
+          <TabsList className="grid w-full grid-cols-5 max-w-2xl mx-auto p-1 bg-white/5 rounded-full">
+            <TabsTrigger value="browse" className="rounded-full data-[state=active]:bg-hero data-[state=active]:text-black font-semibold text-xs">
               Heroes
             </TabsTrigger>
-            <TabsTrigger value="anime" className="rounded-full data-[state=active]:bg-amber-500 data-[state=active]:text-black font-semibold">
+            <TabsTrigger value="anime" className="rounded-full data-[state=active]:bg-amber-500 data-[state=active]:text-black font-semibold text-xs">
               Anime
             </TabsTrigger>
-            <TabsTrigger value="villains" className="rounded-full data-[state=active]:bg-villain data-[state=active]:text-white font-semibold">
+            <TabsTrigger value="villains" className="rounded-full data-[state=active]:bg-villain data-[state=active]:text-white font-semibold text-xs">
               Villains
             </TabsTrigger>
-            <TabsTrigger value="progress" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-black font-semibold">
+            <TabsTrigger value="ranks" className="rounded-full data-[state=active]:bg-yellow-500 data-[state=active]:text-black font-semibold text-xs">
+              Ranks
+            </TabsTrigger>
+            <TabsTrigger value="progress" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-black font-semibold text-xs">
               Progress
             </TabsTrigger>
           </TabsList>
@@ -372,6 +376,11 @@ export default function Home() {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* === GLOBAL RANKS === */}
+          <TabsContent value="ranks" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <Leaderboard />
           </TabsContent>
 
           {/* === PROGRESS === */}

@@ -16,6 +16,7 @@ const FEATURES = [
   "Nemesis Series: Push / Pull / Legs + Hypertrophy",
   "Workout history with sets, reps & weight logged",
   "XP rank progression (F → SSS)",
+  "Global leaderboard rankings by physique path",
 ];
 
 export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
@@ -71,7 +72,7 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
               </div>
               <div className="text-sm font-bold mt-1">Annual</div>
               <div className="text-xl font-display font-black">$39.99</div>
-              <div className="text-[10px] text-muted-foreground">per year · save 33%</div>
+              <div className="text-[10px] text-muted-foreground">per year · 12-month plan</div>
             </button>
 
             {/* Monthly */}
@@ -85,7 +86,7 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
               )}
             >
               <div className="text-sm font-bold">Monthly</div>
-              <div className="text-xl font-display font-black">$4.99</div>
+              <div className="text-xl font-display font-black">$2.99</div>
               <div className="text-[10px] text-muted-foreground">per month</div>
             </button>
           </div>
@@ -103,7 +104,7 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
               <>
                 {selected === "annual"
                   ? "Get Pro — $39.99/yr"
-                  : "Get Pro — $4.99/mo"}
+                  : "Get Pro — $2.99/mo"}
               </>
             )}
           </Button>
@@ -111,7 +112,7 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
           <p className="text-xs text-center text-muted-foreground leading-relaxed">
             {selected === "annual"
               ? "You'll be charged $39.99 today. Your subscription renews automatically every year at $39.99 until you cancel."
-              : "You'll be charged $4.99 today. Your subscription renews automatically every month at $4.99 until you cancel."}{" "}
+              : "You'll be charged $2.99 today. Your subscription renews automatically every month at $2.99 until you cancel."}{" "}
             Cancel anytime from your profile (Pro Subscription → Manage); you keep Pro until the end of the period you paid for.
             Prices in USD, plus any applicable tax. Payments are processed by Stripe. See our{" "}
             <a href="/terms" className="underline">Terms</a> and <a href="/privacy" className="underline">Privacy Policy</a>.

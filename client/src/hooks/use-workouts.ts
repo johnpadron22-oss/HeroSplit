@@ -455,6 +455,36 @@ export function usePrefetchWorkout() {
   };
 }
 
+// ── Leaderboard ───────────────────────────────────────────────────────────────
+
+export interface LeaderboardRow {
+  rank: number;
+  alias: string;
+  path: string;
+  weeklyXp: number;
+  totalXp: number;
+  streak: number;
+}
+
+export function useLeaderboard(path: "hero" | "villain" | "all" = "hero") {
+  return useQuery<LeaderboardRow[]>({
+    queryKey: ["leaderboard", path],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_leaderboard", { p_path: path });
+      if (error) throw error;
+      return ((data as Record<string, unknown>[]) ?? []).map((row) => ({
+        rank: Number(row.rank),
+        alias: String(row.alias ?? "Anonymous"),
+        path: String(row.path ?? path),
+        weeklyXp: Number(row.weekly_xp ?? 0),
+        totalXp: Number(row.total_xp ?? 0),
+        streak: Number(row.streak ?? 0),
+      }));
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 export function useDeleteAccount() {
   const [isPending, setIsPending] = useState(false);
   const { toast } = useToast();
