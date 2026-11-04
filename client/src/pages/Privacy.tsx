@@ -14,7 +14,7 @@ export default function Privacy() {
           <h1 className="text-3xl font-display font-black mb-2">
             <span className="text-hero">HERO</span>SPLIT — Privacy Policy
           </h1>
-          <p className="text-sm text-muted-foreground">Effective date: September 8, 2026</p>
+          <p className="text-sm text-muted-foreground">Effective date: November 4, 2026</p>
         </div>
 
         <div className="prose prose-invert prose-sm max-w-none space-y-8 text-muted-foreground leading-relaxed [&_h2]:text-foreground [&_h2]:font-display [&_h2]:font-black [&_h2]:text-lg [&_h2]:mt-10 [&_h2]:mb-3 [&_strong]:text-foreground">
@@ -25,12 +25,12 @@ export default function Privacy() {
 
           <h2>1. Data We Collect</h2>
 
-          <p><strong>Account data (via Google OAuth):</strong></p>
+          <p><strong>Account data (via email magic link):</strong></p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Your Google email address</li>
-            <li>Your Google user ID (used internally to identify your account)</li>
+            <li>Your email address (used to send a one-time sign-in link)</li>
+            <li>An internal user ID generated when you first sign in</li>
           </ul>
-          <p>We do not receive your Google password. We do not access your Google contacts, calendar, Drive, or any other Google services.</p>
+          <p>We never receive or store a password. Magic links expire after a short window and can only be used once.</p>
 
           <p><strong>Profile data (created when you use the Service):</strong></p>
           <ul className="list-disc pl-5 space-y-1">

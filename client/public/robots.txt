@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /landing
+Allow: /splits/
+Allow: /terms
+Allow: /privacy
+
+Disallow: /api/
+Disallow: /.well-known/
+
+Sitemap: https://hero-split.vercel.app/sitemap.xml
