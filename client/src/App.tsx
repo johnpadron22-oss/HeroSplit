@@ -8,13 +8,16 @@ import { Loader2 } from "lucide-react";
 // Lazy-loaded pages — each becomes its own JS chunk, keeping the
 // initial bundle small. The loading fallback is the same spinner
 // the auth check already shows, so there's no visible flash.
-const Home        = lazy(() => import("@/pages/Home"));
-const Landing     = lazy(() => import("@/pages/Landing"));
-const Onboarding  = lazy(() => import("@/pages/Onboarding"));
-const WorkoutView = lazy(() => import("@/pages/WorkoutView"));
-const Terms       = lazy(() => import("@/pages/Terms"));
-const Privacy     = lazy(() => import("@/pages/Privacy"));
-const NotFound    = lazy(() => import("@/pages/not-found"));
+const Home               = lazy(() => import("@/pages/Home"));
+const Landing            = lazy(() => import("@/pages/Landing"));
+const Onboarding         = lazy(() => import("@/pages/Onboarding"));
+const WorkoutView        = lazy(() => import("@/pages/WorkoutView"));
+const Terms              = lazy(() => import("@/pages/Terms"));
+const Privacy            = lazy(() => import("@/pages/Privacy"));
+const SplitNightAcrobat  = lazy(() => import("@/pages/SplitNightAcrobat"));
+const SplitAgileClimber  = lazy(() => import("@/pages/SplitAgileClimber"));
+const SplitSolarSentinel = lazy(() => import("@/pages/SplitSolarSentinel"));
+const NotFound           = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
   return (
@@ -50,6 +53,11 @@ function Router() {
 
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
+
+        {/* SEO landing pages — no auth required */}
+        <Route path="/splits/night-acrobat"  component={SplitNightAcrobat} />
+        <Route path="/splits/agile-climber"  component={SplitAgileClimber} />
+        <Route path="/splits/solar-sentinel" component={SplitSolarSentinel} />
 
         <Route component={NotFound} />
       </Switch>

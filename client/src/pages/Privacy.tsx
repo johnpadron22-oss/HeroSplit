@@ -14,7 +14,7 @@ export default function Privacy() {
           <h1 className="text-3xl font-display font-black mb-2">
             <span className="text-hero">HERO</span>SPLIT — Privacy Policy
           </h1>
-          <p className="text-sm text-muted-foreground">Effective date: September 8, 2026</p>
+          <p className="text-sm text-muted-foreground">Effective date: November 4, 2026</p>
         </div>
 
         <div className="prose prose-invert prose-sm max-w-none space-y-8 text-muted-foreground leading-relaxed [&_h2]:text-foreground [&_h2]:font-display [&_h2]:font-black [&_h2]:text-lg [&_h2]:mt-10 [&_h2]:mb-3 [&_strong]:text-foreground">
@@ -27,9 +27,10 @@ export default function Privacy() {
 
           <p><strong>Account data (via email magic link):</strong></p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Your email address (used to send sign-in links and to identify your account)</li>
+            <li>Your email address (used to send a one-time sign-in link)</li>
+            <li>An internal user ID generated when you first sign in</li>
           </ul>
-          <p>We do not store your password because sign-in is passwordless — we send a one-time magic link to your email. We do not access any third-party accounts or services on your behalf.</p>
+          <p>We never receive or store a password. Magic links expire after a short window and can only be used once. We do not access any third-party accounts or services on your behalf.</p>
 
           <p><strong>Profile data (created when you use the Service):</strong></p>
           <ul className="list-disc pl-5 space-y-1">
