@@ -71,7 +71,7 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
                 </div>
               </div>
               <div className="text-sm font-bold mt-1">Annual</div>
-              <div className="text-xl font-display font-black">$39.99</div>
+              <div className="text-xl font-display font-black tabular-nums">$39.99</div>
               <div className="text-[10px] text-muted-foreground">per year · 12-month plan</div>
             </button>
 
@@ -86,7 +86,7 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
               )}
             >
               <div className="text-sm font-bold">Monthly</div>
-              <div className="text-xl font-display font-black">$2.99</div>
+              <div className="text-xl font-display font-black tabular-nums">$2.99</div>
               <div className="text-[10px] text-muted-foreground">per month</div>
             </button>
           </div>

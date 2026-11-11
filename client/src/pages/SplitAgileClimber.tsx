@@ -109,7 +109,7 @@ export default function SplitAgileClimber() {
           </div>
         </section>
 
-        <div className="p-6 rounded-2xl border border-cyan-500/20 bg-cyan-500/5 text-center space-y-3">
+        <div className="-mx-6 px-6 py-8 border-y border-cyan-500/20 bg-cyan-500/5 text-center space-y-3">
           <h2 className="text-xl font-display font-black">Start Agile Climber — Free</h2>
           <p className="text-sm text-muted-foreground">Create a free account and track every session with XP, streaks and loot drops.</p>
           <Link href="/landing">

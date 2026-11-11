@@ -117,7 +117,7 @@ export function WorkoutCard({ workout, isLocked = false, onUnlock, experienceLev
           <Button
             onClick={onUnlock}
             className={cn(
-              "w-full font-semibold min-h-[44px]",
+              "w-full font-semibold min-h-[44px] rounded-xl",
               isVillain
                 ? "bg-purple-600 hover:bg-purple-500 text-white"
                 : "bg-cyan-600 hover:bg-cyan-500 text-black"
@@ -129,7 +129,7 @@ export function WorkoutCard({ workout, isLocked = false, onUnlock, experienceLev
           <Link href={`/workout/${workout.slug}`} className="w-full">
             <Button
               className={cn(
-                "w-full font-semibold transition-all min-h-[44px]",
+                "w-full font-semibold transition-all min-h-[44px] rounded-xl",
                 isVillain
                   ? "bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/20"
                   : "bg-cyan-600 hover:bg-cyan-500 text-black shadow-lg shadow-cyan-900/20"
