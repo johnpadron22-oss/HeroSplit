@@ -16,6 +16,7 @@ import confetti from "canvas-confetti";
 import { format } from "date-fns";
 import { MuscleMap } from "@/components/MuscleMap";
 import { MuscleGroupCard } from "@/components/MuscleGroupCard";
+import { WalkthroughTip } from "@/components/WalkthroughTip";
 import { getProgramMuscles, getExerciseMuscles, MUSCLE_LABELS } from "@/lib/muscles";
 import type { MuscleGroup, MuscleStatus } from "@/lib/muscles";
 
@@ -67,6 +68,15 @@ export default function WorkoutView() {
   const { mutate: createLog, isPending: isSaving } = useCreateLog();
   const isPro = useIsPro();
   const [showPaywall, setShowPaywall] = useState(false);
+
+  // Walkthrough tips (1A)
+  const [walkthroughStep, setWalkthroughStep] = useState<number>(() => {
+    try {
+      const v = localStorage.getItem("hs_walkthrough_v1");
+      if (v === "done") return 99;
+      return parseInt(v ?? "0", 10) || 0;
+    } catch { return 99; }
+  });
 
   // Phase
   const [phase, setPhase] = useState<Phase>("preview");
@@ -440,6 +450,19 @@ export default function WorkoutView() {
             ))}
           </div>
 
+          {/* Walkthrough step 2 — shown once on preview phase */}
+          <AnimatePresence>
+            {walkthroughStep === 1 && (
+              <WalkthroughTip
+                message="Ready? Tap Start Battle to begin the workout and start logging sets."
+                onDismiss={() => {
+                  try { localStorage.setItem("hs_walkthrough_v1", "2"); } catch { /* ignore */ }
+                  setWalkthroughStep(2);
+                }}
+              />
+            )}
+          </AnimatePresence>
+
           <Button
             size="lg"
             className={cn("w-full h-14 text-lg font-bold rounded-2xl gap-2", btnClass)}
@@ -807,31 +830,46 @@ export default function WorkoutView() {
 
       {/* Footer controls */}
       <footer className="fixed bottom-0 w-full px-4 py-4 border-t border-white/5 bg-background/90 backdrop-blur-md z-10">
-        <div className="max-w-lg mx-auto flex gap-3">
-          {/* Skip exercise */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="shrink-0 h-12 w-12"
-            onClick={advanceExercise}
-            title="Skip exercise"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
+        <div className="max-w-lg mx-auto space-y-2">
+          {/* Walkthrough step 3 — shown once on first active set */}
+          <AnimatePresence>
+            {walkthroughStep === 2 && (
+              <WalkthroughTip
+                message="Enter your weight and reps above — then tap here to log the set."
+                onDismiss={() => {
+                  try { localStorage.setItem("hs_walkthrough_v1", "done"); } catch { /* ignore */ }
+                  setWalkthroughStep(99);
+                }}
+              />
+            )}
+          </AnimatePresence>
 
-          {/* Complete set */}
-          <Button
-            size="lg"
-            className={cn("flex-1 h-12 font-bold text-base gap-2", btnClass)}
-            onClick={completeSet}
-          >
-            <CheckCircle className="w-5 h-5" />
-            {setIndex + 1 < totalSets
-              ? `Complete Set ${setIndex + 1}`
-              : exIndex + 1 < exercises.length
-              ? "Finish & Next Exercise"
-              : "Finish Workout"}
-          </Button>
+          <div className="flex gap-3">
+            {/* Skip exercise */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 h-12 w-12"
+              onClick={advanceExercise}
+              title="Skip exercise"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+
+            {/* Complete set */}
+            <Button
+              size="lg"
+              className={cn("flex-1 h-12 font-bold text-base gap-2", btnClass)}
+              onClick={completeSet}
+            >
+              <CheckCircle className="w-5 h-5" />
+              {setIndex + 1 < totalSets
+                ? `Complete Set ${setIndex + 1}`
+                : exIndex + 1 < exercises.length
+                ? "Finish & Next Exercise"
+                : "Finish Workout"}
+            </Button>
+          </div>
         </div>
       </footer>
     </div>
