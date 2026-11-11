@@ -114,7 +114,15 @@ export function WorkoutCard({ workout, isLocked = false, onUnlock, experienceLev
 
         {/* CTA — Detail 13: min 44px tap target for gym use */}
         {isLocked ? (
-          <Button onClick={onUnlock} variant="secondary" className="w-full font-semibold min-h-[44px]">
+          <Button
+            onClick={onUnlock}
+            className={cn(
+              "w-full font-semibold min-h-[44px]",
+              isVillain
+                ? "bg-purple-600 hover:bg-purple-500 text-white"
+                : "bg-cyan-600 hover:bg-cyan-500 text-black"
+            )}
+          >
             Unlock Pro
           </Button>
         ) : (

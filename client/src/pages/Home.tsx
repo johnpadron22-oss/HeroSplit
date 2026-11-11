@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkouts, useUserProgress, useManageBilling } from "@/hooks/use-workouts";
 import { useAuth } from "@/hooks/use-auth";
 import { WorkoutCard } from "@/components/WorkoutCard";
+import { WalkthroughTip } from "@/components/WalkthroughTip";
 import { WorkoutGridSkeleton } from "@/components/WorkoutCardSkeleton";
 import { Leaderboard } from "@/components/Leaderboard";
 import { CommandMenu } from "@/components/CommandMenu";
@@ -12,7 +13,7 @@ import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
 import { DeleteAccountCard } from "@/components/DeleteAccountCard";
 import { MuscleMap } from "@/components/MuscleMap";
-import { Loader2, Flame, Trophy, Calendar, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus, Bell, BellOff, Search } from "lucide-react";
+import { Loader2, Flame, Trophy, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus, Bell, BellOff, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,13 @@ export default function Home() {
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("browse");
   const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [walkthroughStep, setWalkthroughStep] = useState<number>(() => {
+    try {
+      const v = localStorage.getItem("hs_walkthrough_v1");
+      if (v === "done") return 99;
+      return parseInt(v ?? "0", 10) || 0;
+    } catch { return 99; }
+  });
   const { openPortal, isPending: portalPending } = useManageBilling();
   const queryClient = useQueryClient();
 
@@ -248,6 +256,17 @@ export default function Home() {
               </div>
             )}
 
+            {/* Walkthrough step 1 — shown once when hero workouts are loaded */}
+            {walkthroughStep === 0 && !loadingHero && heroWorkouts && heroWorkouts.length > 0 && (
+              <WalkthroughTip
+                message="Pick a workout to preview it — then tap Start to begin your first battle."
+                onDismiss={() => {
+                  try { localStorage.setItem("hs_walkthrough_v1", "1"); } catch { /* ignore */ }
+                  setWalkthroughStep(1);
+                }}
+              />
+            )}
+
             {/* Detail 1: skeleton loaders replace spinner for workout grid */}
             {loadingHero ? (
               <WorkoutGridSkeleton count={6} />
@@ -338,7 +357,7 @@ export default function Home() {
                 </div>
                 <Button
                   onClick={() => setShowPaywall(true)}
-                  className="bg-white text-purple-900 hover:bg-purple-100 font-bold"
+                  className="bg-purple-600 hover:bg-purple-500 text-white font-bold"
                 >
                   Unlock
                 </Button>
@@ -449,39 +468,38 @@ export default function Home() {
                   />
                 )}
 
-                {/* Quick stats row */}
+                {/* Quick stats row — metric first, label second (1B) */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {/* Detail 16: tabular-nums keeps stat digits aligned as they change */}
                   <div className="bg-card border border-white/5 p-4 rounded-xl">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
-                      <Flame className="w-4 h-4 text-orange-500" /> Streak
-                    </div>
-                    <div className="text-3xl font-display font-bold tabular-nums">
+                    <div className="text-3xl font-display font-bold tabular-nums mb-1">
                       {progress?.stats?.currentStreak ?? 0}
                     </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Flame className="w-3.5 h-3.5 text-orange-500" /> Streak
+                    </div>
                   </div>
                   <div className="bg-card border border-white/5 p-4 rounded-xl">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
-                      <Trophy className="w-4 h-4 text-yellow-500" /> Best
-                    </div>
-                    <div className="text-3xl font-display font-bold tabular-nums">
+                    <div className="text-3xl font-display font-bold tabular-nums mb-1">
                       {progress?.stats?.longestStreak ?? 0}
                     </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Trophy className="w-3.5 h-3.5 text-yellow-500" /> Best
+                    </div>
                   </div>
                   <div className="bg-card border border-white/5 p-4 rounded-xl">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
-                      <Dumbbell className="w-4 h-4 text-cyan-500" /> Sessions
-                    </div>
-                    <div className="text-3xl font-display font-bold tabular-nums">
+                    <div className="text-3xl font-display font-bold tabular-nums mb-1">
                       {progress?.stats?.totalWorkouts ?? 0}
                     </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Dumbbell className="w-3.5 h-3.5 text-cyan-500" /> Sessions
+                    </div>
                   </div>
                   <div className="bg-card border border-white/5 p-4 rounded-xl">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-2 text-sm">
-                      <Zap className="w-4 h-4 text-yellow-400" /> Total XP
-                    </div>
-                    <div className="text-3xl font-display font-bold tabular-nums">
+                    <div className="text-3xl font-display font-bold tabular-nums mb-1">
                       {(progress?.profile?.totalXP ?? 0).toLocaleString()}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Zap className="w-3.5 h-3.5 text-yellow-400" /> Total XP
                     </div>
                   </div>
                 </div>
