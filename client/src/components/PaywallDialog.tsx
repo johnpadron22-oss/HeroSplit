@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, Crown, Loader2, Zap } from "lucide-react";
+import { Check, Lock, Loader2, Zap, Crown } from "lucide-react";
 import { useUpgradePro } from "@/hooks/use-workouts";
 import { cn } from "@/lib/utils";
 
@@ -10,13 +10,17 @@ interface PaywallDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const FEATURES = [
-  "All Villain Tier workouts (6 elite programs)",
-  "All 10 Anime Arc programs",
-  "Nemesis Series: Push / Pull / Legs + Hypertrophy",
-  "Workout history with sets, reps & weight logged",
-  "XP rank progression (F → SSS)",
-  "Global leaderboard rankings by physique path",
+const FREE_SPLITS = [
+  { name: "Night Acrobat",  emoji: "🦅", focus: "Bodyweight · Agility" },
+  { name: "Night Detective", emoji: "🔍", focus: "Full body · Conditioning" },
+  { name: "Agile Climber",  emoji: "🧗", focus: "Upper/Lower · Athletic" },
+  { name: "Solar Sentinel", emoji: "☀️", focus: "Push/Pull/Lower · Hypertrophy" },
+];
+
+const PRO_TIERS = [
+  { label: "Villain Arc",    count: "6 elite programs",  emoji: "💀", color: "text-purple-300" },
+  { label: "Anime Arc",      count: "10 programs",       emoji: "⚡", color: "text-amber-300" },
+  { label: "Nemesis Series", count: "Push / Pull / Legs", emoji: "🔥", color: "text-red-300" },
 ];
 
 export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
@@ -25,97 +29,181 @@ export function PaywallDialog({ open, onOpenChange }: PaywallDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-gradient-to-b from-card to-background border-purple-500/20 p-0 overflow-hidden">
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4 text-center space-y-3 bg-gradient-to-b from-purple-950/60 to-transparent">
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center border border-purple-500/30">
-            <Crown className="w-7 h-7 text-purple-400" />
+      {/*
+        High-contrast navy dark mode — intentionally distinct from the rest of the
+        app to break scroll autopilot. Navy-tinted black (#0a0e1a) + warm white (#f5f0e8).
+      */}
+      <DialogContent
+        className="sm:max-w-md p-0 overflow-hidden border-0"
+        style={{ background: "#0a0e1a", color: "#f5f0e8" }}
+      >
+        {/* Screenreader-only title/description for accessibility */}
+        <DialogTitle className="sr-only">Unlock HeroSplit Pro</DialogTitle>
+        <DialogDescription className="sr-only">
+          Choose a plan to unlock all Pro workout programs.
+        </DialogDescription>
+
+        {/* ── Header ── */}
+        <div
+          className="px-6 pt-6 pb-5 text-center space-y-3"
+          style={{ background: "linear-gradient(to bottom, #131929, #0a0e1a)" }}
+        >
+          <div
+            className="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center"
+            style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.35)" }}
+          >
+            <Crown className="w-7 h-7" style={{ color: "#c084fc" }} />
           </div>
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-display">Unlock Villain Mode</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Push your limits with intense workouts designed for absolute power.
-            </DialogDescription>
-          </DialogHeader>
+          <div>
+            <h2 className="text-2xl font-display font-black" style={{ color: "#f5f0e8" }}>
+              Unlock Villain Mode
+            </h2>
+            <p className="text-sm mt-1" style={{ color: "#a8a09a" }}>
+              35+ elite programs. One subscription.
+            </p>
+          </div>
         </div>
 
-        <div className="px-6 pb-6 space-y-5">
-          {/* Features */}
-          <div className="space-y-2.5">
-            {FEATURES.map((feature, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
-                  <Check className="w-3 h-3 text-green-400" />
+        <div className="px-5 pb-6 space-y-5">
+
+          {/* ── FREE tier — already yours ── */}
+          <div>
+            <p
+              className="text-[10px] font-mono uppercase tracking-widest mb-2"
+              style={{ color: "#6ee7b7" }}
+            >
+              ✓ Yours free — always
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {FREE_SPLITS.map((s) => (
+                <div
+                  key={s.name}
+                  className="flex items-center gap-2 p-2.5 rounded-lg"
+                  style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.15)" }}
+                >
+                  <span className="text-base">{s.emoji}</span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold leading-tight truncate" style={{ color: "#d1fae5" }}>
+                      {s.name}
+                    </div>
+                    <div className="text-[10px] truncate" style={{ color: "#6b7280" }}>
+                      {s.focus}
+                    </div>
+                  </div>
                 </div>
-                <span className="text-sm">{feature}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          {/* Plan selector */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* ── PRO tier — locked ── */}
+          <div>
+            <p
+              className="text-[10px] font-mono uppercase tracking-widest mb-2"
+              style={{ color: "#c084fc" }}
+            >
+              <Lock className="w-3 h-3 inline mr-1" />Pro only
+            </p>
+            <div className="space-y-1.5">
+              {PRO_TIERS.map((t) => (
+                <div
+                  key={t.label}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg"
+                  style={{ background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.15)" }}
+                >
+                  <span className="text-lg">{t.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className={cn("text-sm font-semibold", t.color)}>{t.label}</span>
+                    <span className="text-xs ml-2" style={{ color: "#6b7280" }}>{t.count}</span>
+                  </div>
+                  <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#6b7280" }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Plan selector ── */}
+          <div className="grid grid-cols-2 gap-2 pt-1">
             {/* Annual */}
             <button
               onClick={() => setSelected("annual")}
-              className={cn(
-                "relative p-3 rounded-xl border-2 text-left transition-all",
-                selected === "annual"
-                  ? "border-purple-500 bg-purple-500/10"
-                  : "border-white/10 bg-white/[0.02] hover:border-white/20"
-              )}
+              className="relative p-3 rounded-xl text-left transition-all"
+              style={{
+                border: selected === "annual" ? "2px solid #9333ea" : "2px solid rgba(255,255,255,0.1)",
+                background: selected === "annual" ? "rgba(147,51,234,0.12)" : "rgba(255,255,255,0.03)",
+              }}
             >
-              {/* Best value badge */}
-              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
-                <div className="flex items-center gap-0.5 bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <div className="flex items-center gap-0.5 bg-purple-600 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: "#f5f0e8" }}>
                   <Zap className="w-2.5 h-2.5" /> BEST VALUE
                 </div>
               </div>
-              <div className="text-sm font-bold mt-1">Annual</div>
-              <div className="text-xl font-display font-black tabular-nums">$39.99</div>
-              <div className="text-[10px] text-muted-foreground">per year · 12-month plan</div>
+              <div className="text-sm font-bold mt-1" style={{ color: "#f5f0e8" }}>Annual</div>
+              <div className="text-xl font-display font-black tabular-nums" style={{ color: "#f5f0e8" }}>$39.99</div>
+              <div className="text-[10px]" style={{ color: "#a8a09a" }}>per year · $3.33/mo</div>
             </button>
 
             {/* Monthly */}
             <button
               onClick={() => setSelected("monthly")}
-              className={cn(
-                "p-3 rounded-xl border-2 text-left transition-all",
-                selected === "monthly"
-                  ? "border-purple-500 bg-purple-500/10"
-                  : "border-white/10 bg-white/[0.02] hover:border-white/20"
-              )}
+              className="p-3 rounded-xl text-left transition-all"
+              style={{
+                border: selected === "monthly" ? "2px solid #9333ea" : "2px solid rgba(255,255,255,0.1)",
+                background: selected === "monthly" ? "rgba(147,51,234,0.12)" : "rgba(255,255,255,0.03)",
+              }}
             >
-              <div className="text-sm font-bold">Monthly</div>
-              <div className="text-xl font-display font-black tabular-nums">$2.99</div>
-              <div className="text-[10px] text-muted-foreground">per month</div>
+              <div className="text-sm font-bold" style={{ color: "#f5f0e8" }}>Monthly</div>
+              <div className="text-xl font-display font-black tabular-nums" style={{ color: "#f5f0e8" }}>$4.99</div>
+              <div className="text-[10px]" style={{ color: "#a8a09a" }}>per month</div>
             </button>
           </div>
 
-          {/* CTA */}
+          {/* ── Disclosure — full price, renewal, cancel ── */}
+          <div
+            className="rounded-xl px-4 py-3 space-y-1.5"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            <div className="flex items-start gap-2 text-xs" style={{ color: "#c8bfb0" }}>
+              <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#6ee7b7" }} />
+              <span>
+                <strong style={{ color: "#f5f0e8" }}>
+                  {selected === "annual" ? "Charged $39.99 today" : "Charged $4.99 today"}
+                </strong>
+                {selected === "annual"
+                  ? " · renews yearly at $39.99"
+                  : " · renews monthly at $4.99"}
+              </span>
+            </div>
+            <div className="flex items-start gap-2 text-xs" style={{ color: "#c8bfb0" }}>
+              <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#6ee7b7" }} />
+              <span>Cancel anytime from your profile — keep Pro until period ends</span>
+            </div>
+            <div className="flex items-start gap-2 text-xs" style={{ color: "#c8bfb0" }}>
+              <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#6ee7b7" }} />
+              <span>Prices in USD + applicable tax · Processed by Stripe</span>
+            </div>
+          </div>
+
+          {/* ── CTA ── */}
           <Button
             size="lg"
-            className="w-full h-12 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/25 font-bold text-base"
+            className="w-full h-12 font-bold text-base"
+            style={{ background: "#7c3aed", color: "#f5f0e8" }}
             onClick={() => upgrade(selected)}
             disabled={isPending}
           >
             {isPending ? (
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
             ) : (
-              <>
-                {selected === "annual"
-                  ? "Get Pro — $39.99/yr"
-                  : "Get Pro — $2.99/mo"}
-              </>
+              selected === "annual" ? "Get Pro — $39.99/yr" : "Get Pro — $4.99/mo"
             )}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground leading-relaxed">
-            {selected === "annual"
-              ? "You'll be charged $39.99 today. Your subscription renews automatically every year at $39.99 until you cancel."
-              : "You'll be charged $2.99 today. Your subscription renews automatically every month at $2.99 until you cancel."}{" "}
-            Cancel anytime from your profile (Pro Subscription → Manage); you keep Pro until the end of the period you paid for.
-            Prices in USD, plus any applicable tax. Payments are processed by Stripe. See our{" "}
-            <a href="/terms" className="underline">Terms</a> and <a href="/privacy" className="underline">Privacy Policy</a>.
+          <p className="text-[10px] text-center leading-relaxed" style={{ color: "#6b7280" }}>
+            See our{" "}
+            <a href="/terms" className="underline hover:opacity-80">Terms</a>
+            {" "}and{" "}
+            <a href="/privacy" className="underline hover:opacity-80">Privacy Policy</a>
+            . No hidden fees, no fake discounts, no fake reviews.
           </p>
         </div>
       </DialogContent>

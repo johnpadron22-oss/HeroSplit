@@ -530,7 +530,7 @@ export default function Landing() {
               {
                 emoji: "⛩️",
                 title: "Anime Arcs",
-                desc: "Pro unlocks 10 anime-themed programs — Dragon Ball, Naruto, JJK, One Piece, AOT, Demon Slayer. Train like the legends.",
+                desc: "Pro unlocks 10 anime-inspired programs across shonen, battle, and power archetypes. Train like the legends.",
                 color: "border-red-500/20",
               },
             ].map((f) => (
@@ -642,7 +642,7 @@ export default function Landing() {
                   {[
                     "Everything in Free",
                     "6 Villain Tier workouts",
-                    "10 Anime Arc programs (DBZ, Naruto, JJK…)",
+                    "10 Anime Arc programs (shonen, battle, power archetypes)",
                     "Nemesis Series: PPL + Hypertrophy",
                     "Full workout history with sets & weights",
                     "Cancel anytime via billing portal",
