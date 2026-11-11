@@ -3,6 +3,7 @@ import { Flame, Trophy, Dumbbell, Zap, Shield, Skull } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getRankInfo, getRankProgress, xpToNextRank } from "@/lib/rank";
 import type { UserProfile } from "@/hooks/use-workouts";
+import { usePrivacyMode } from "@/contexts/privacy-mode";
 
 interface ProfileCardProps {
   profile: UserProfile;
@@ -41,6 +42,7 @@ export function ProfileCard({ profile, totalWorkouts, currentStreak }: ProfileCa
   const progress   = getRankProgress(totalXP);
   const remaining  = xpToNextRank(totalXP);
   const isVillain  = profile.path === "villain";
+  const { isPrivate } = usePrivacyMode();
   const archetype  = profile.archetype
     ? (ARCHETYPE_DISPLAY[profile.archetype] ?? { name: profile.archetype, emoji: "⚡" })
     : null;
@@ -117,10 +119,14 @@ export function ProfileCard({ profile, totalWorkouts, currentStreak }: ProfileCa
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-yellow-400" />
-              <span className="font-bold text-yellow-400">{totalXP.toLocaleString()} XP</span>
+              <span className="font-bold text-yellow-400">
+                {isPrivate ? "••• XP" : `${totalXP.toLocaleString()} XP`}
+              </span>
             </div>
             <div className="text-muted-foreground">
-              {remaining !== null
+              {isPrivate ? (
+                <span>••• XP to next</span>
+              ) : remaining !== null
                 ? <span>{remaining.toLocaleString()} XP to {getRankInfo(totalXP + (remaining ?? 0)).rank}</span>
                 : <span className={rankInfo.tailwindText}>MAX RANK</span>}
             </div>
@@ -128,9 +134,9 @@ export function ProfileCard({ profile, totalWorkouts, currentStreak }: ProfileCa
           <div className="h-2 rounded-full bg-white/5 overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: `${progress * 100}%` }}
+              animate={{ width: isPrivate ? "50%" : `${progress * 100}%` }}
               transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-              className={cn("h-full rounded-full", rankInfo.tailwindBar)}
+              className={cn("h-full rounded-full", isPrivate ? "bg-white/20" : rankInfo.tailwindBar)}
             />
           </div>
         </div>
@@ -141,14 +147,14 @@ export function ProfileCard({ profile, totalWorkouts, currentStreak }: ProfileCa
             <div className="flex justify-center mb-1">
               <Dumbbell className="w-4 h-4 text-muted-foreground" />
             </div>
-            <div className="text-xl font-display font-bold">{totalWorkouts}</div>
+            <div className="text-xl font-display font-bold">{isPrivate ? "•••" : totalWorkouts}</div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Sessions</div>
           </div>
           <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3 text-center">
             <div className="flex justify-center mb-1">
               <Flame className="w-4 h-4 text-orange-400" />
             </div>
-            <div className="text-xl font-display font-bold">{currentStreak}</div>
+            <div className="text-xl font-display font-bold">{isPrivate ? "•••" : currentStreak}</div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Streak</div>
           </div>
           <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3 text-center">

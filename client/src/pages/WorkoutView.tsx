@@ -11,7 +11,7 @@ import {
   Flame, Loader2, Play, SkipForward, Timer, Trophy, Zap,
   Info, TrendingUp, Wind, ArrowUpRight, Target,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
 import { MuscleMap } from "@/components/MuscleMap";
@@ -98,6 +98,8 @@ export default function WorkoutView() {
 
   // XP
   const [xpEarned, setXpEarned] = useState(0);
+
+  const shouldReduce = useReducedMotion();
 
   // ── Timers ──────────────────────────────────────────────────────────────────
 
@@ -300,7 +302,12 @@ export default function WorkoutView() {
   // ── Preview ─────────────────────────────────────────────────────────────────
   if (phase === "preview") {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <motion.div
+        className="min-h-screen bg-background flex flex-col"
+        initial={{ opacity: 0, y: shouldReduce ? 0 : 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      >
         <header className="px-4 h-14 flex items-center border-b border-white/5 fixed top-0 w-full z-10 bg-background/80 backdrop-blur-sm">
           <Link href="/">
             <Button variant="ghost" size="icon" className="-ml-2">
@@ -472,7 +479,7 @@ export default function WorkoutView() {
             Start Battle
           </Button>
         </main>
-      </div>
+      </motion.div>
     );
   }
 
@@ -495,7 +502,12 @@ export default function WorkoutView() {
       .slice(0, 4);
 
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center pb-10 pt-8 px-4">
+      <motion.div
+        className="min-h-screen bg-background flex flex-col items-center pb-10 pt-8 px-4"
+        initial={{ opacity: 0, scale: shouldReduce ? 1 : 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+      >
         {/* Trophy header */}
         <motion.div
           initial={{ scale: 0, rotate: -180 }}
@@ -628,7 +640,7 @@ export default function WorkoutView() {
             </Button>
           </Link>
         </motion.div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -783,8 +795,14 @@ export default function WorkoutView() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Weight + Reps inputs */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Weight + Reps inputs — re-animate on each exercise change */}
+        <motion.div
+          key={`inputs-${exIndex}`}
+          className="grid grid-cols-2 gap-3"
+          initial={{ opacity: 0, y: shouldReduce ? 0 : -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+        >
           <div className="space-y-1.5">
             <label className="text-xs text-muted-foreground uppercase tracking-widest">Weight (lbs/kg)</label>
             <Input
@@ -807,7 +825,7 @@ export default function WorkoutView() {
               className="h-12 text-center text-lg font-bold bg-card border-white/10"
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Previous sets */}
         {setsForCurrent.length > 0 && (

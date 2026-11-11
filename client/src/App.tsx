@@ -3,6 +3,7 @@ import { Switch, Route, Redirect } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
+import { PrivacyModeProvider } from "@/contexts/privacy-mode";
 import { Loader2 } from "lucide-react";
 
 // Lazy-loaded pages — each becomes its own JS chunk, keeping the
@@ -67,10 +68,12 @@ function Router() {
 
 function App() {
   return (
-    <TooltipProvider>
-      <Router />
-      <Toaster />
-    </TooltipProvider>
+    <PrivacyModeProvider>
+      <TooltipProvider>
+        <Router />
+        <Toaster />
+      </TooltipProvider>
+    </PrivacyModeProvider>
   );
 }
 

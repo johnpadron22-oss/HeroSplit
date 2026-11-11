@@ -13,7 +13,7 @@ import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
 import { DeleteAccountCard } from "@/components/DeleteAccountCard";
 import { MuscleMap } from "@/components/MuscleMap";
-import { Loader2, Flame, Trophy, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus, Bell, BellOff, Search } from "lucide-react";
+import { Loader2, Flame, Trophy, Dumbbell, LogOut, TrendingUp, ChevronDown, ChevronUp, Zap, CreditCard, ExternalLink, MessageSquarePlus, Bell, BellOff, Search, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,8 @@ import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { getMuscleTrainingCounts, countToTier, MUSCLE_LABELS } from "@/lib/muscles";
 import type { MuscleGroup, MuscleTrainingTier } from "@/lib/muscles";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePrivacyMode, masked } from "@/contexts/privacy-mode";
 
 export default function Home() {
   const [showPaywall, setShowPaywall] = useState(false);
@@ -39,6 +41,7 @@ export default function Home() {
   });
   const { openPortal, isPending: portalPending } = useManageBilling();
   const queryClient = useQueryClient();
+  const { isPrivate, toggle: togglePrivacy } = usePrivacyMode();
 
   const { user, logout } = useAuth();
   const { toast } = useToast();
@@ -388,6 +391,22 @@ export default function Home() {
 
           {/* === PROGRESS === */}
           <TabsContent value="progress" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Privacy Mode toggle */}
+            <div className="flex items-center justify-end">
+              <button
+                onClick={togglePrivacy}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                  isPrivate
+                    ? "bg-white/10 border-white/20 text-foreground"
+                    : "bg-transparent border-white/10 text-muted-foreground hover:border-white/20 hover:text-foreground"
+                )}
+                aria-label={isPrivate ? "Show progress values" : "Hide progress values"}
+              >
+                {isPrivate ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {isPrivate ? "Privacy on" : "Privacy"}
+              </button>
+            </div>
             {loadingProgress ? (
               /* Detail 1: progress skeleton — shows realistic layout while loading */
               <div className="space-y-4">
@@ -470,38 +489,30 @@ export default function Home() {
 
                 {/* Quick stats row — metric first, label second (1B) */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="bg-card border border-white/5 p-4 rounded-xl">
-                    <div className="text-3xl font-display font-bold tabular-nums mb-1">
-                      {progress?.stats?.currentStreak ?? 0}
+                  {[
+                    { key: "streak",   value: masked(progress?.stats?.currentStreak ?? 0, isPrivate), icon: <Flame className="w-3.5 h-3.5 text-orange-500" />, label: "Streak" },
+                    { key: "best",     value: masked(progress?.stats?.longestStreak ?? 0, isPrivate),  icon: <Trophy className="w-3.5 h-3.5 text-yellow-500" />, label: "Best" },
+                    { key: "sessions", value: masked(progress?.stats?.totalWorkouts ?? 0, isPrivate),  icon: <Dumbbell className="w-3.5 h-3.5 text-cyan-500" />, label: "Sessions" },
+                    { key: "xp",       value: masked((progress?.profile?.totalXP ?? 0).toLocaleString(), isPrivate), icon: <Zap className="w-3.5 h-3.5 text-yellow-400" />, label: "Total XP" },
+                  ].map(({ key, value, icon, label }) => (
+                    <div key={key} className="bg-card border border-white/5 p-4 rounded-xl">
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                          key={value}
+                          className="text-3xl font-display font-bold tabular-nums mb-1"
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 6 }}
+                          transition={{ duration: 0.15 }}
+                        >
+                          {value}
+                        </motion.div>
+                      </AnimatePresence>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {icon} {label}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Flame className="w-3.5 h-3.5 text-orange-500" /> Streak
-                    </div>
-                  </div>
-                  <div className="bg-card border border-white/5 p-4 rounded-xl">
-                    <div className="text-3xl font-display font-bold tabular-nums mb-1">
-                      {progress?.stats?.longestStreak ?? 0}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Trophy className="w-3.5 h-3.5 text-yellow-500" /> Best
-                    </div>
-                  </div>
-                  <div className="bg-card border border-white/5 p-4 rounded-xl">
-                    <div className="text-3xl font-display font-bold tabular-nums mb-1">
-                      {progress?.stats?.totalWorkouts ?? 0}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Dumbbell className="w-3.5 h-3.5 text-cyan-500" /> Sessions
-                    </div>
-                  </div>
-                  <div className="bg-card border border-white/5 p-4 rounded-xl">
-                    <div className="text-3xl font-display font-bold tabular-nums mb-1">
-                      {(progress?.profile?.totalXP ?? 0).toLocaleString()}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Zap className="w-3.5 h-3.5 text-yellow-400" /> Total XP
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
                 {/* Activity chart */}
@@ -629,11 +640,11 @@ export default function Home() {
                                 <div className="text-xs text-muted-foreground flex items-center gap-2">
                                   <span>{log.date}</span>
                                   <span>·</span>
-                                  <span className="tabular-nums">{log.duration}m</span>
+                                  <span className="tabular-nums">{masked(`${log.duration}m`, isPrivate)}</span>
                                   {log.xpEarned ? (
                                     <>
                                       <span>·</span>
-                                      <span className="text-yellow-400 font-semibold tabular-nums">+{log.xpEarned} XP</span>
+                                      <span className="text-yellow-400 font-semibold tabular-nums">{masked(`+${log.xpEarned} XP`, isPrivate)}</span>
                                     </>
                                   ) : null}
                                 </div>
@@ -661,8 +672,9 @@ export default function Home() {
                                           key={si}
                                           className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-xs font-mono tabular-nums"
                                         >
-                                          {s.weight !== "BW" ? `${s.weight} × ` : ""}{s.reps}
-                                          {s.weight === "BW" ? " reps" : ""}
+                                          {isPrivate ? "•••" : (
+                                            <>{s.weight !== "BW" ? `${s.weight} × ` : ""}{s.reps}{s.weight === "BW" ? " reps" : ""}</>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
