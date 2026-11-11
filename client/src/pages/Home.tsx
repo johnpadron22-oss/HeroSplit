@@ -8,7 +8,6 @@ import { Leaderboard } from "@/components/Leaderboard";
 import { CommandMenu } from "@/components/CommandMenu";
 import { PaywallDialog } from "@/components/PaywallDialog";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
-import { OnboardingModal } from "@/components/OnboardingModal";
 import { ProgressChart } from "@/components/ProgressChart";
 import { ProfileCard } from "@/components/ProfileCard";
 import { DeleteAccountCard } from "@/components/DeleteAccountCard";
@@ -33,15 +32,6 @@ export default function Home() {
   const { openPortal, isPending: portalPending } = useManageBilling();
   const queryClient = useQueryClient();
 
-  const handleOnboardingComplete = (expLevel: "beginner" | "intermediate" | "advanced" | "veteran") => {
-    const rec =
-      expLevel === "beginner"     ? "Night Acrobat" :
-      expLevel === "intermediate" ? "Agile Climber" : "Night Detective";
-    setActiveTab("browse");
-    setRecommendation(rec);
-    // Auto-dismiss recommendation banner after 8s
-    setTimeout(() => setRecommendation(null), 8000);
-  };
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const { permission, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } = usePushNotifications();
@@ -96,12 +86,6 @@ export default function Home() {
     ? user.email.split("@")[0].replace(/[._-]/g, " ").split(" ")[0]
     : "Hero";
   const avatarInitial = displayName[0]?.toUpperCase() ?? "H";
-
-  // Show onboarding if profile exists but no archetype chosen yet
-  const needsOnboarding =
-    !loadingProgress &&
-    progress?.profile &&
-    !progress.profile.archetype;
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-8 safe-bottom">
@@ -785,13 +769,6 @@ export default function Home() {
       <PaywallDialog open={showPaywall} onOpenChange={setShowPaywall} />
       <FeedbackDialog open={showFeedback} onOpenChange={setShowFeedback} profile={progress?.profile} />
 
-      {needsOnboarding && progress?.profile && (
-        <OnboardingModal
-          profile={progress.profile}
-          defaultAlias={displayName}
-          onComplete={handleOnboardingComplete}
-        />
-      )}
     </div>
   );
 }
