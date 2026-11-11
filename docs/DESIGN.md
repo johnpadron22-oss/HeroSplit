@@ -82,14 +82,30 @@ Page horizontal padding: `px-4` on mobile, `px-4` with `max-w-5xl mx-auto` conta
 
 | Token | Value | Use |
 |-------|-------|-----|
-| `rounded-sm` | 3px | Tiny badges, tags |
+| `rounded-sm` | 2px | Tiny badges, tags |
 | `rounded-md` | 6px | Inputs, small buttons |
-| `rounded-lg` | 9px | Most cards, standard buttons |
-| `rounded-xl` | 12px | Workout log rows, expanded sections |
-| `rounded-2xl` | 16px | Cards with headers, dialogs, stats tiles |
+| `rounded-lg` | 8px | Most cards, standard buttons |
+| `rounded-xl` | 12px | Workout log rows, expanded sections, inner tiles |
+| `rounded-2xl` | 16px | Cards with headers, dialogs |
+| `rounded-3xl` | 24px | Large summary/completion cards |
 | `rounded-full` | 9999px | Pills, avatars, circular buttons |
 
-**Rule:** Cards use `rounded-2xl`. Dialogs use `rounded-2xl`. Badges use `rounded-full` or `rounded-sm`. Never mix arbitrarily.
+**Rule:** Cards use `rounded-2xl`. Large summary cards use `rounded-3xl`. Dialogs use `rounded-2xl`. Badges use `rounded-full` or `rounded-sm`. Never mix arbitrarily.
+
+### Concentric Corners
+When an element is nested inside a padded container, the inner radius must shrink to maintain visual harmony:
+
+```
+inner_radius ≈ outer_radius − container_padding
+```
+
+| Outer | Padding | Inner |
+|-------|---------|-------|
+| `rounded-3xl` (24px) | `p-5` (20px) | `rounded-xl` (12px) |
+| `rounded-2xl` (16px) | `p-4–p-6` | `rounded-xl` (12px) |
+| `rounded-xl` (12px) | `p-3` | `rounded-lg` (8px) |
+
+Never use `rounded-2xl` or larger inside a `rounded-3xl` container. Never use `rounded-xl` inside a `rounded-xl` container.
 
 ---
 

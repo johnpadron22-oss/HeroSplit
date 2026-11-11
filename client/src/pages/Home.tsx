@@ -629,11 +629,11 @@ export default function Home() {
                                 <div className="text-xs text-muted-foreground flex items-center gap-2">
                                   <span>{log.date}</span>
                                   <span>·</span>
-                                  <span>{log.duration}m</span>
+                                  <span className="tabular-nums">{log.duration}m</span>
                                   {log.xpEarned ? (
                                     <>
                                       <span>·</span>
-                                      <span className="text-yellow-400 font-semibold">+{log.xpEarned} XP</span>
+                                      <span className="text-yellow-400 font-semibold tabular-nums">+{log.xpEarned} XP</span>
                                     </>
                                   ) : null}
                                 </div>
@@ -659,7 +659,7 @@ export default function Home() {
                                       {exercise.sets.map((s, si) => (
                                         <div
                                           key={si}
-                                          className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-xs font-mono"
+                                          className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-xs font-mono tabular-nums"
                                         >
                                           {s.weight !== "BW" ? `${s.weight} × ` : ""}{s.reps}
                                           {s.weight === "BW" ? " reps" : ""}
