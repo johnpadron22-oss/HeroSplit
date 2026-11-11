@@ -16,7 +16,7 @@ const CATEGORIES = [
     id: "character",
     label: "Character Request",
     icon: Users,
-    placeholder: "Which character should we add? (e.g. 'Goku Ultra Instinct workout', 'Spider-Man parkour program'...) What makes them special for training?",
+    placeholder: "Which archetype should we build next? (e.g. 'an ultra-instinct speedster split', 'an acrobatic wall-climber build') What makes them special for training?",
     color: "border-amber-500/40 bg-amber-500/10 text-amber-300",
     activeColor: "border-amber-500 bg-amber-500/20",
   },

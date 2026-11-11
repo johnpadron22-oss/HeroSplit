@@ -64,7 +64,7 @@ function parseDefaultRest(s?: string): number {
 export default function WorkoutView() {
   const [, params] = useRoute("/workout/:slug");
   const slug = params?.slug ?? "";
-  const { data: workout, isLoading } = useWorkout(slug);
+  const { data: workout, isLoading, error } = useWorkout(slug);
   const { mutate: createLog, isPending: isSaving } = useCreateLog();
   const isPro = useIsPro();
   const [showPaywall, setShowPaywall] = useState(false);
@@ -148,6 +148,21 @@ export default function WorkoutView() {
             <Skeleton key={i} className="h-16 w-full rounded-xl" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 p-6 text-center">
+        <div className="text-4xl">⚡</div>
+        <h1 className="text-2xl font-bold">Couldn't load workout</h1>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          Check your connection and try again.
+        </p>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
       </div>
     );
   }

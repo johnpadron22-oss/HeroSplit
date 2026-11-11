@@ -307,7 +307,7 @@ export default function Home() {
                 <div>
                   <h3 className="text-lg font-bold text-white mb-1">Unlock Anime Mode</h3>
                   <p className="text-sm text-amber-200/70">
-                    Train like the legends — DBZ, Naruto, JJK, One Piece, and more.
+                    10 exclusive anime-inspired programs. Train like the legends.
                   </p>
                 </div>
                 <Button
