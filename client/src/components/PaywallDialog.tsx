@@ -12,7 +12,7 @@ interface PaywallDialogProps {
 
 const FEATURES = [
   "All Villain Tier workouts (6 elite programs)",
-  "All Anime Arc workouts (DBZ, Naruto, JJK, One Piece…)",
+  "All 10 Anime Arc programs",
   "Nemesis Series: Push / Pull / Legs + Hypertrophy",
   "Workout history with sets, reps & weight logged",
   "XP rank progression (F → SSS)",

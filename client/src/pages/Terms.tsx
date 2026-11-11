@@ -35,7 +35,7 @@ export default function Terms() {
 
           <h2>3. Your Account</h2>
           <p>
-            You sign in using a passwordless email magic link sent to your email address. You are responsible for all activity that occurs under your account. You must keep access to your email secure. Notify us immediately at <a href="mailto:johnpadron22@gmail.com" className="text-hero hover:underline">johnpadron22@gmail.com</a> if you believe your account has been compromised.
+            You sign in using a one-time magic link sent to your email address — no password is required or stored. You are responsible for all activity that occurs under your account. You must keep access to your email secure. Notify us immediately at <a href="mailto:johnpadron22@gmail.com" className="text-hero hover:underline">johnpadron22@gmail.com</a> if you believe your account has been compromised.
           </p>
 
           <h2>4. Free and Pro Plans</h2>
